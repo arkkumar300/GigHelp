@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import Logo from '../../../components/Logo';
 import styles from './LoginStyles';
 
-import Icon from 'react-native-vector-icons/FontAwesome';
+import {} from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const LoginScreen = ({ navigation }) => {
   return (
@@ -11,7 +11,7 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.contentWrapper}>
         <TouchableOpacity style={styles.backButton}>
           {/* <Text style={styles.backArrow}>←</Text> */}
-          <Icon name="angle-left" size={30} color="#000" />
+          <Icon name="account" size={30} color="#000" />
         </TouchableOpacity>
 
         <Logo />
