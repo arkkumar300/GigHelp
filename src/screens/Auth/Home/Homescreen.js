@@ -13,7 +13,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation, useRoute } from "@react-navigation/native";
 import styles from "./HomeStyle";
 import HomeImage from "../assets/home.jpg"; // Adjust your image path
-import AddTaskDetails from "../components/AddTaskDetails"; // You should create this component in RN
+import AddTaskDetails from "../AddTask/TaskDdetails"; // You should create this component in RN
 
 const HomeScreen = () => {
   const [tasks, setTasks] = useState([]);
@@ -126,6 +126,7 @@ const HomeScreen = () => {
     return (
       <AddTaskDetails
         task={selectedTask}
+        documents={selectedTask.document}
         onBack={() => setSelectedTask(null)}
       />
     );
