@@ -25,6 +25,7 @@
     "react-native-calendars": "^1.1312.1",
     "react-native-chart-kit": "^6.12.0",
     "react-native-date-picker": "^5.0.12",
+    "react-native-document-picker": "^9.3.1",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-file-viewer": "^2.1.5",
     "react-native-fs": "^2.20.0",
