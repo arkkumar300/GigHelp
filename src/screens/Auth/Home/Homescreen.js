@@ -12,8 +12,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import styles from "./HomeStyle";
-import HomeImage from "../assets/home.jpg"; // Adjust your image path
-import AddTaskDetails from "../AddTask/TaskDdetails"; // You should create this component in RN
+// import HomeImage from "../assets/home.jpg"; // Adjust your image path
+import AddTaskDetails from "../AddTask/TaskDdetails";
+import { loadData } from "../../../Utils/appData";
 
 const HomeScreen = () => {
   const [tasks, setTasks] = useState([]);
@@ -31,6 +32,19 @@ const HomeScreen = () => {
     from,
     to,
   } = route?.params || {};
+  const [userInfo,setUserInfo]=useState(null)
+  console.log(userInfo,"user information")
+
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const storedUser = await loadData("userInfo");
+      if (storedUser) {
+        setUserInfo(storedUser);
+      }
+    };
+
+    getUserInfo();
+  }, []);
 
   const colors = [
     "#2196f3", "#4caf50", "#ff9800", "#e91e63", "#9c27b0",
@@ -134,7 +148,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={HomeImage} style={styles.heroImage} />
+      {/* <Image source={HomeImage} style={styles.heroImage} /> */}
       <View style={styles.overlay}>
         <Text style={styles.heroText}>Empowering Your</Text>
         <Text style={styles.heroText}>Vision, Building Your Future.</Text>

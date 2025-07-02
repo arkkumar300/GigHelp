@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { View, FlatList, Alert, StyleSheet, TouchableOpacity} from "react-native";
 import { Card, Text, Button, Chip, Modal, Portal, Provider as PaperProvider} from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "react-native-axios";
+import axios from "axios";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import moment from "moment";
 import { useNavigation } from "@react-navigation/native";
+import ApiService from "../../../services/ApiService";
+import { loadData } from "../../../Utils/appData";
 import styles from "./MyTaskStyle";
 
-const MyTask = () => {
+const MyTaskScreen = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskBidder, setShowTaskBidder] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
@@ -19,23 +21,24 @@ const MyTask = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
-        const userData = JSON.parse(await AsyncStorage.getItem("user"));
+        // const token = await AsyncStorage.getItem("token");
+        const userData = await loadData("userInfo");
 
-        if (!token || !userData || !userData.userId) {
+        if (!userData || !userData.userId) {
           Alert.alert("Error", "Authorization token or user data missing!");
           return;
         }
 
         const userId = userData.userId;
 
-        const response = await axios.post(
-          "http://localhost:3001/task/get-task-by-user",
+        const response = await ApiService.post(
+          "/task/get-task-by-user",
           { userId },
-          { headers: { Authorization: `Bearer ${token}` } }
+          // { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log(response,"response my tas")
 
-        const tasksWithColors = response.data.data.map((task) => ({
+        const tasksWithColors = response.data.map((task) => ({
           ...task,
           color: getColorByStatus(task.status),
         }));
@@ -116,7 +119,7 @@ const MyTask = () => {
             </View>
           ) : (
             <View style={styles.rowBetween}>
-              <Text>Sub Category: {task.SubCategory || "N/A"}</Text>
+              <Text>Sub Category: {task.subCategory || "N/A"}</Text>
               <Icon
                 name="delete"
                 size={24}
@@ -200,4 +203,4 @@ const MyTask = () => {
 };
 
 
-export default MyTask;
+export default MyTaskScreen;

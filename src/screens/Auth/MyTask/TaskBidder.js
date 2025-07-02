@@ -14,11 +14,13 @@ import {
   Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'react-native-axios';
+import axios from 'axios';
 import { Button, TextInput, Card, Avatar } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import DocumentPicker from 'react-native-document-picker';
-import ImagePicker from 'react-native-image-picker';
+// import DocumentPicker from 'react-native-document-picker';
+// import { launchImageLibrary } from 'react-native-image-picker';
+
+// import ImagePicker from 'react-native-image-picker';
 import DocumentView from 'react-native-document-viewer';
 import DropDownPicker from 'react-native-dropdown-picker';
 

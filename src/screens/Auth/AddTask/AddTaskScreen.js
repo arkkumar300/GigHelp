@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,17 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import {
-  TextInput,
-  Button,
-  Title,
-  useTheme,
-} from 'react-native-paper';
+import {TextInput, Button, Title, useTheme} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DropDownPicker from 'react-native-dropdown-picker';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import DatePicker from 'react-native-date-picker';
 import axios from 'axios';
-import DocumentPicker from 'react-native-document-picker';
+import ApiService from '../../../services/ApiService';
+import {loadData} from '../../../Utils/appData';
+// import DocumentPicker from 'react-native-document-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
+
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const AddTaskScreen = () => {
@@ -24,6 +25,9 @@ const AddTaskScreen = () => {
 
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
+  const [openPostedIn, setOpenPostedIn] = useState(false);
+  const [openEndDate, setOpenEndDate] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   const [category, setCategory] = useState(null);
   const [subCategory, setSubCategory] = useState(null);
@@ -59,23 +63,28 @@ const AddTaskScreen = () => {
 
   const getTokenAndUser = async () => {
     const token = await AsyncStorage.getItem('token');
-    const userData = await AsyncStorage.getItem('user');
-    return { token, userData: JSON.parse(userData) };
+    const userData = await loadData('userInfo');
+    return {token, userData};
   };
 
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { token } = await getTokenAndUser();
-        const res = await axios.get('http://localhost:3001/categories/get-all', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const formatted = res.data.data.map((item) => ({
+        // const {token} = await getTokenAndUser();
+        const res = await ApiService.get(
+          '/categories/get-all',
+          //   {
+          //     headers: {Authorization: `Bearer ${token}`},
+          //   },
+        );
+        console.log(res, 'response');
+        const formatted = res.data.map(item => ({
           label: item.categoryName,
           value: item.categoryId,
         }));
         setCategoryList(formatted);
+        console.log(formatted, 'forrrrrrr');
       } catch (error) {
         console.error('Error fetching categories:', error);
       }
@@ -88,20 +97,22 @@ const AddTaskScreen = () => {
     const fetchSubCategories = async () => {
       if (!category) return;
       try {
-        const { token } = await getTokenAndUser();
-        const res = await axios.get(
-          `http://localhost:3001/subcategories/get-all-categoryId?categoryId=${category}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+        // const {token} = await getTokenAndUser();
+        const res = await ApiService.get(
+          `/subcategories/get-all-categoryId?categoryId=${category}`,
+          //   {
+          //     headers: {Authorization: `Bearer ${token}`},
+          //   },
         );
-        const formatted = res.data.data.map((item) => ({
+        const formatted = res.data.map(item => ({
           label: item.SubCategoryName,
           value: item.SubCategoryId,
         }));
         setSubCategoryList(formatted);
 
-        const selected = categoryList.find((cat) => cat.value === category);
+        console.log(formatted, 'sub category');
+
+        const selected = categoryList.find(cat => cat.value === category);
         setCategoryName(selected?.label || '');
 
         if (selected?.label?.toLowerCase() === 'transport') {
@@ -118,29 +129,77 @@ const AddTaskScreen = () => {
     fetchSubCategories();
   }, [category]);
 
-  const handleFilePick = async () => {
-    try {
-      const results = await DocumentPicker.pickMultiple({
-        type: [DocumentPicker.types.allFiles],
-      });
-      setFiles(results);
-    } catch (err) {
-      if (!DocumentPicker.isCancel(err)) {
-        console.error(err);
+  // const handleFilePick = async () => {
+  //   try {
+  //     const results = await DocumentPicker.pickMultiple({
+  //       type: [DocumentPicker.types.allFiles],
+  //     });
+  //     setFiles(results);
+  //   } catch (err) {
+  //     if (!DocumentPicker.isCancel(err)) {
+  //       console.error(err);
+  //     }
+  //   }
+  // };
+
+  const handleFilePick = () => {
+    const options = {
+      mediaType: 'mixed',
+      selectionLimit: 0,
+    };
+
+    launchImageLibrary(options, response => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.errorCode) {
+        console.error('ImagePicker Error:', response.errorMessage);
+      } else {
+        const selectedFiles = response.assets.map(asset => ({
+          uri:
+            Platform.OS === 'ios'
+              ? asset.uri.replace('file://', '')
+              : asset.uri,
+          name: asset.fileName || `file-${Date.now()}`,
+          type: asset.type || 'application/octet-stream',
+        }));
+        setFiles(selectedFiles);
+        console.log('Files selected:', selectedFiles);
       }
-    }
+    });
   };
 
   const handleSubmit = async () => {
+    if (
+      !category ||
+      !subCategory ||
+      !postedIn ||
+      !endDate ||
+      !amount ||
+      !phoneNumber ||
+      !description
+      //   ||
+      //   files.length === 0
+    ) {
+      Alert.alert('Validation Error', 'Please fill all the required fields.');
+      return;
+    }
+
+    if (categoryName.toLowerCase() === 'transport' && (!from || !to)) {
+      Alert.alert(
+        'Validation Error',
+        'Please fill both "From" and "To" fields for Transport.',
+      );
+      return;
+    }
     try {
-      const { token, userData } = await getTokenAndUser();
-      if (!token || !userData?.userId) {
+      const {token, userData} = await getTokenAndUser();
+      if (!userData?.userId) {
         Alert.alert('Error', 'Token or user data missing');
         return;
       }
 
-      const categoryObj = categoryList.find((c) => c.value === category);
-      const subCategoryObj = subCategoryList.find((s) => s.value === subCategory);
+      const categoryObj = categoryList.find(c => c.value === category);
+      const subCategoryObj = subCategoryList.find(s => s.value === subCategory);
 
       const formData = new FormData();
       formData.append('task', categoryObj?.label || '');
@@ -165,20 +224,16 @@ const AddTaskScreen = () => {
         });
       });
 
-      const response = await axios.post(
-        'http://localhost:3001/task/create',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      console.log(formData, 'form data of add task');
 
-      if (response.data.success) {
-        Alert.alert('Success', response.data.message);
+      const response = await ApiService.post('/task/create', formData);
+      console.log(response, 'responsive');
+
+      if (response?.success) {
+        Alert.alert('Success', response.message);
         resetForm();
+      } else {
+        Alert.alert('Failed', response.message);
       }
     } catch (error) {
       console.error('Submission error:', error);
@@ -187,8 +242,8 @@ const AddTaskScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Title style={{ marginBottom: 20, textAlign: 'center' }}>Add Task</Title>
+    <KeyboardAwareScrollView contentContainerStyle={{padding: 20}}>
+      <Title style={{marginBottom: 20, textAlign: 'center'}}>Add Task</Title>
 
       <DropDownPicker
         open={openCategory}
@@ -199,7 +254,9 @@ const AddTaskScreen = () => {
         setItems={setCategoryList}
         placeholder="Select Category"
         zIndex={3000}
-        style={{ marginBottom: 10 }}
+        style={{marginBottom: 10}}
+        dropDownDirection="AUTO"
+        listMode="SCROLLVIEW"
       />
 
       <DropDownPicker
@@ -212,7 +269,9 @@ const AddTaskScreen = () => {
         placeholder="Select Sub Category"
         zIndex={2000}
         disabled={!category}
-        style={{ marginBottom: 10 }}
+        style={{marginBottom: 10}}
+        dropDownDirection="AUTO"
+        listMode="SCROLLVIEW"
       />
 
       {categoryName.toLowerCase() === 'transport' && (
@@ -222,34 +281,43 @@ const AddTaskScreen = () => {
             value={from}
             onChangeText={setFrom}
             mode="outlined"
-            style={{ marginBottom: 10 }}
+            style={{marginBottom: 10}}
           />
           <TextInput
             label="To"
             value={to}
             onChangeText={setTo}
             mode="outlined"
-            style={{ marginBottom: 10 }}
+            style={{marginBottom: 10}}
           />
         </>
       )}
 
-      <TextInput
-        label="Posted In"
-        value={postedIn}
-        onChangeText={setPostedIn}
-        mode="outlined"
-        placeholder="YYYY-MM-DD"
-        style={{ marginBottom: 10 }}
-      />
-      <TextInput
-        label="End Date"
-        value={endDate}
-        onChangeText={setEndDate}
-        mode="outlined"
-        placeholder="YYYY-MM-DD"
-        style={{ marginBottom: 10 }}
-      />
+      {/* Posted In Date Picker */}
+      <TouchableOpacity onPress={() => setOpenPostedIn(true)}>
+        <TextInput
+          label="Posted In"
+          value={postedIn}
+          mode="outlined"
+          placeholder="YYYY-MM-DD"
+          editable={false}
+          pointerEvents="none"
+          style={{marginBottom: 10}}
+        />
+      </TouchableOpacity>
+
+      {/* End Date Picker */}
+      <TouchableOpacity onPress={() => setOpenEndDate(true)}>
+        <TextInput
+          label="End Date"
+          value={endDate}
+          mode="outlined"
+          placeholder="YYYY-MM-DD"
+          editable={false}
+          pointerEvents="none"
+          style={{marginBottom: 10}}
+        />
+      </TouchableOpacity>
 
       <TextInput
         label="Amount"
@@ -257,7 +325,7 @@ const AddTaskScreen = () => {
         onChangeText={setAmount}
         mode="outlined"
         keyboardType="numeric"
-        style={{ marginBottom: 10 }}
+        style={{marginBottom: 10}}
       />
 
       <TextInput
@@ -266,7 +334,7 @@ const AddTaskScreen = () => {
         onChangeText={setPhoneNumber}
         mode="outlined"
         keyboardType="phone-pad"
-        style={{ marginBottom: 10 }}
+        style={{marginBottom: 10}}
       />
 
       <TextInput
@@ -276,7 +344,7 @@ const AddTaskScreen = () => {
         mode="outlined"
         multiline
         numberOfLines={5}
-        style={{ marginBottom: 10 }}
+        style={{marginBottom: 10}}
       />
 
       <TouchableOpacity
@@ -288,25 +356,52 @@ const AddTaskScreen = () => {
           borderRadius: 8,
           alignItems: 'center',
           marginBottom: 10,
-        }}
-      >
+        }}>
         <MaterialCommunityIcons name="file-upload" size={24} />
-        <Text style={{ marginTop: 5 }}>Upload Files</Text>
-        <Text style={{ fontSize: 12, color: '#666' }}>
-          {files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}
+        <Text style={{marginTop: 5}}>Upload Files</Text>
+        <Text style={{fontSize: 12, color: '#666'}}>
+          {files.length > 0
+            ? `${files.length} file(s) selected`
+            : 'No files selected'}
         </Text>
       </TouchableOpacity>
 
       <Button
         mode="contained"
         onPress={handleSubmit}
-        style={{ marginTop: 20, paddingVertical: 5 }}
-        contentStyle={{ height: 50 }}
-        labelStyle={{ fontSize: 18 }}
-      >
+        style={{marginTop: 20, paddingVertical: 5}}
+        contentStyle={{height: 50}}
+        labelStyle={{fontSize: 18}}>
         Submit
       </Button>
-    </ScrollView>
+
+      {/* Date Pickers */}
+      <DatePicker
+        modal
+        open={openPostedIn}
+        date={tempDate}
+        mode="date"
+        onConfirm={date => {
+          setOpenPostedIn(false);
+          setTempDate(date);
+          setPostedIn(date.toISOString().split('T')[0]);
+        }}
+        onCancel={() => setOpenPostedIn(false)}
+      />
+
+      <DatePicker
+        modal
+        open={openEndDate}
+        date={tempDate}
+        mode="date"
+        onConfirm={date => {
+          setOpenEndDate(false);
+          setTempDate(date);
+          setEndDate(date.toISOString().split('T')[0]);
+        }}
+        onCancel={() => setOpenEndDate(false)}
+      />
+    </KeyboardAwareScrollView>
   );
 };
 
