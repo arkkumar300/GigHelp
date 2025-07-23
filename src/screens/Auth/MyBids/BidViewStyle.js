@@ -6,6 +6,7 @@ export default StyleSheet.create({
   },
   backButton: {
     marginBottom: 16,
+    color: '#2196f3',
   },
   card: {
     marginBottom: 16,

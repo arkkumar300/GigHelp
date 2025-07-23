@@ -1,14 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
-import Logo from '../../../components/Logo';
+import {Logo, BottomImage} from '../../../components/Logo';
 import styles from './LoginStyles';
 import {loadData} from '../../../Utils/appData';
-
-// import {Icon} from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const LoginScreen = ({navigation}) => {
   const [userInfo, setUserInfo] = useState(null);
+
   useEffect(() => {
     const getUserInfo = async () => {
       const storedUser = await loadData('userInfo');
@@ -18,17 +17,17 @@ const LoginScreen = ({navigation}) => {
     };
     getUserInfo();
   }, []);
-  
+
   return (
     <View style={styles.container}>
-      <View style={styles.contentWrapper}>
-        <TouchableOpacity style={styles.backButton}>
-          <Text style={styles.backArrow}>←</Text>
-          {/* <Icon name="account" size={30} color="#000" /> */}
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}>
+        <Icon name="arrow-left" size={28} color="#000" />
+      </TouchableOpacity>
 
-        <Logo />
-        <Text style={styles.tagline}>Help & Earn</Text>
+      <View style={styles.contentWrapper}>
+        <Logo style={{width: 250, height: 100, resizeMode: 'contain'}} />
 
         <TouchableOpacity
           style={styles.button}
@@ -45,7 +44,7 @@ const LoginScreen = ({navigation}) => {
         </TouchableOpacity>
 
         <Text style={styles.footerText}>
-          Create New Account ?{' '}
+          Create New Account?{' '}
           <Text
             style={styles.linkText}
             onPress={() => navigation.navigate('Register')}>
@@ -54,26 +53,11 @@ const LoginScreen = ({navigation}) => {
         </Text>
       </View>
 
-      {/* <Image
-        source={require('../../../assets/images/gig-login-bottom-img.jpg')}
-        style={styles.footerImage}
-        resizeMode="cover"
-      /> */}
+      <View style={styles.footerContainer}>
+        <BottomImage style={styles.footerImage} />
+      </View>
     </View>
   );
 };
 
 export default LoginScreen;
-
-// import React from 'react';
-// import { View, Text } from 'react-native';
-
-// const LoginScreen = () => {
-//   return (
-//     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-//       <Text style={{ fontSize: 24, color: 'black' }}>Login Screen is working</Text>
-//     </View>
-//   );
-// };
-
-// export default LoginScreen;

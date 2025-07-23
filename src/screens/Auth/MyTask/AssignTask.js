@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,44 @@ import {
   Image,
   Linking,
   ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Card, Avatar, Button } from 'react-native-paper';
+import {Card, Avatar, Button} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ApiService from '../../../services/ApiService';
 import styles from './AssignTaskStyle';
-const DocumentCard = ({ icon, label, fileUrl }) => (
-  <TouchableOpacity style={styles.documentCard} onPress={() => Linking.openURL(fileUrl)}>
+import {useRoute} from '@react-navigation/native';
+import AssignTaskChatBoard from '../ChatBoard/AssignTaskChartBoard';
+
+const DocumentCard = ({icon, label, fileUrl}) => (
+  <TouchableOpacity
+    style={styles.documentCard}
+    onPress={() => Linking.openURL(fileUrl)}>
     <MaterialCommunityIcons name={icon} size={32} color="#1976d2" />
     <Text style={styles.documentLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
-const DocumentSection = ({ title, documents = [] }) => {
-  const getIconName = (filename) => {
+const DocumentSection = ({title, documents = []}) => {
+  const getIconName = filename => {
     const ext = filename.split('.').pop().toLowerCase();
     if (ext === 'pdf') return 'file-pdf';
-    if (["jpg", "jpeg", "png", "gif", "bmp"].includes(ext)) return 'image';
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'image';
     return 'file-document';
   };
 
   const baseUrl = 'http://localhost:3001/storege/userdp/';
 
   return (
-    <View style={{ marginBottom: 20 }}>
+    <View style={{marginBottom: 20}}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <FlatList
         data={documents}
         keyExtractor={(item, index) => index.toString()}
         horizontal
-        renderItem={({ item }) => (
+        renderItem={({item}) => (
           <DocumentCard
             icon={getIconName(item)}
             label={item}
@@ -50,27 +57,35 @@ const DocumentSection = ({ title, documents = [] }) => {
   );
 };
 
-const SkillCard = ({ skill, experience }) => (
+const SkillCard = ({skill, experience}) => (
   <Card style={styles.skillCard}>
     <Text style={styles.skillText}>
-      <MaterialCommunityIcons name="star" size={16} color="#1976d2" /> Skill: {skill}
+      <MaterialCommunityIcons name="star" size={16} color="#1976d2" /> Skill:{' '}
+      {skill}
     </Text>
     <Text style={styles.expText}>
-      <MaterialCommunityIcons name="briefcase" size={16} color="#43a047" /> Experience: {experience}
+      <MaterialCommunityIcons name="briefcase" size={16} color="#43a047" />{' '}
+      Experience: {experience}
     </Text>
   </Card>
 );
 
-const ExciteProfileCard = ({ bidder }) => (
+const ExciteProfileCard = ({bidder}) => (
   <Card style={styles.profileCard}>
     <View style={styles.profileHeader}>
       <Avatar.Image
-        source={{ uri: bidder?.profilePic ? `http://localhost:3001/storege/userdp/${bidder.profilePic}` : undefined }}
+        source={{
+          uri: bidder?.profilePic
+            ? `http://localhost:3001/storege/userdp/${bidder.profilePic}`
+            : undefined,
+        }}
         size={70}
       />
-      <View style={{ marginLeft: 12 }}>
+      <View style={{marginLeft: 12}}>
         <Text style={styles.userName}>{bidder?.userName || 'N/A'}</Text>
-        <Text style={styles.userExperience}>Experience: {bidder?.bidder?.experience || 'N/A'} Yrs</Text>
+        <Text style={styles.userExperience}>
+          Experience: {bidder?.bidder?.experience || 'N/A'} Yrs
+        </Text>
       </View>
     </View>
     <FlatList
@@ -82,26 +97,33 @@ const ExciteProfileCard = ({ bidder }) => (
   </Card>
 );
 
-const BidderDisputeCard = ({ task }) => {
+const BidderDisputeCard = () => {
+  const route = useRoute();
+  const {task} = route.params;
+
   const [bidders, setBidders] = useState([]);
+  const [bidder, setBidder] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  console.log(bidders, 'bidders');
+  console.log(task, 'task');
 
   useEffect(() => {
     const fetchBidders = async () => {
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem('token');
       try {
-        const response = await axios.get(
-          `http://localhost:3001/Bids/users-by-task/${task.taskId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
+        const response = await ApiService.get(
+          `/Bids/users-by-task/${task.taskId}`,
         );
-        setBidders(response.data.data || []);
+
+        setBidders(response.data || []);
+
+        const assignTaskBidder = response?.data.find(item => {
+          return item.userId === Number(task.assignedBidderId);
+        });
+        setBidder(assignTaskBidder)
       } catch (error) {
-        console.error("Error fetching bidders:", error);
+        console.error('Error fetching bidders:', error);
       } finally {
         setLoading(false);
       }
@@ -112,40 +134,62 @@ const BidderDisputeCard = ({ task }) => {
   }, [task?.taskId]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.headerBox}>
-        <Text style={styles.headerText}>Bidder Dispute</Text>
-        <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
-      </View>
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}>
+      <ScrollView style={styles.container}>
+        <View style={styles.headerBox}>
+          <Text style={styles.headerText}>Bidder Dispute</Text>
+          <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+        </View>
 
-      <View style={styles.rowBox}>
-        <Card style={styles.halfCard}>
-          <Text style={styles.cardTitle}>Category: {task.Categories}</Text>
-          <Text style={styles.cardText}>Days Left: {task.daysLeft}</Text>
-          {task.Categories === 'Transport' ? (
-            <>
-              <Text style={styles.cardText}>From: {task.from || 'N/A'}</Text>
-              <Text style={styles.cardText}>To: {task.to || 'N/A'}</Text>
-            </>
-          ) : (
-            <Text style={styles.cardText}>Sub Category: {task.SubCategory || 'N/A'}</Text>
-          )}
-          <Text style={styles.cardText}>Status: {task.status}</Text>
-          <Text style={styles.cardText}>Posted in: {new Date(task.createdAt).toLocaleDateString()}</Text>
-          <Button mode="contained" style={styles.amountButton}>{task.amount}</Button>
-        </Card>
+        <View>
+          <Card style={styles.halfCard}>
+            <Text style={styles.cardTitle}>Category: {task.Categories}</Text>
+            <Text style={styles.cardText}>Days Left: {task.daysLeft}</Text>
+            {task.Categories === 'Transport' ? (
+              <>
+                <Text style={styles.cardText}>From: {task.from || 'N/A'}</Text>
+                <Text style={styles.cardText}>To: {task.to || 'N/A'}</Text>
+              </>
+            ) : (
+              <Text style={styles.cardText}>
+                Sub Category: {task.SubCategory || 'N/A'}
+              </Text>
+            )}
+            <Text style={styles.cardText}>Status: {task.status}</Text>
+            <Text style={styles.cardText}>
+              Posted in: {new Date(task.createdAt).toLocaleDateString()}
+            </Text>
+            <Button mode="contained" style={styles.amountButton}>
+              {task.amount}
+            </Button>
+          </Card>
+        </View>
 
-        <Card style={styles.halfCard}>
-          <Text style={styles.cardTitle}>Description :</Text>
-          <Text style={styles.cardText}>{task.description}</Text>
-        </Card>
-      </View>
+        <View>
+          <Card style={styles.halfCard}>
+            <Text style={styles.cardTitle}>Description :</Text>
+            <Text style={styles.cardText}>{task.description}</Text>
+          </Card>
+        </View>
 
-      <DocumentSection title="Task Owner Document" documents={task.document || []} />
-      <DocumentSection title="Bidder Document" documents={task.document || []} />
+        <DocumentSection
+          title="Task Owner Document"
+          documents={task.document || []}
+        />
+        <DocumentSection
+          title="Bidder Document"
+          documents={task.document || []}
+        />
 
-      {bidders.length > 0 && <ExciteProfileCard bidder={bidders[0]} />}
-    </ScrollView>
+        {bidders.length > 0 && <ExciteProfileCard bidder={bidder} />}
+        <View style={{flex: 1, height: "60%", marginBottom: 30}}>
+          <AssignTaskChatBoard task={bidder} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

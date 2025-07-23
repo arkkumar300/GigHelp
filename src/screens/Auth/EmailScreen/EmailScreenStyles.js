@@ -1,38 +1,99 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet, Dimensions} from 'react-native';
+
+const {height,width} = Dimensions.get('window');
 
 export default StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
+    paddingTop: 40,
     backgroundColor: '#fff',
   },
+  backButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 10,
+  },
   welcomeText: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: '#000',
+    marginTop: 20,
+    marginBottom: 5,
+  },
+  subText: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    color: '#000',
+    marginBottom: 5,
+    marginTop: 15,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
+    paddingVertical: 4,
+  },
+  icon: {
+    marginRight: 8,
   },
   input: {
-    borderBottomWidth: 1,
+    flex: 1,
+    fontSize: 14,
+    color: '#000',
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginTop: 5,
     marginBottom: 15,
-    padding: 10,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    color: '#000',
   },
   loginBtn: {
     backgroundColor: '#000',
-    padding: 14,
-    borderRadius: 6,
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 15,
+    marginBottom: 20,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   footerText: {
     textAlign: 'center',
-    marginTop: 15,
+    fontSize: 14,
+    color: '#000',
   },
   linkText: {
-    color: '#007BFF',
+    color: '#007bff',
+    fontWeight: '600',
+  },
+  footerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+
+  footerImage: {
+    width: width,
+    height: height * 0.35, // or fixed like 250
+    resizeMode: 'contain',
   },
 });

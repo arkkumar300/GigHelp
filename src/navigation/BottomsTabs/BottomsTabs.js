@@ -8,6 +8,7 @@ import MyTaskScreen from '../../screens/Auth/MyTask/MyTaskScreen';
 import AddTaskScreen from '../../screens/Auth/AddTask/AddTaskScreen';
 import MyBidsScreen from '../../screens/Auth/MyBids/MyBidsScreen';
 import FiltersScreen from '../../screens/Auth/Filters/FiltersScreen';
+import TestPicker from '../../screens/Auth/TestScreen';
 // import FiltersScreen from '../screens/Filters/FiltersScreen';
 
 const Tab = createBottomTabNavigator();

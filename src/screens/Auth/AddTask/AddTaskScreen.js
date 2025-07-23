@@ -6,8 +6,19 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Linking,
+  Image,
+  StyleSheet,
 } from 'react-native';
-import {TextInput, Button, Title, useTheme} from 'react-native-paper';
+import {
+  TextInput,
+  Button,
+  Portal,
+  Modal,
+  Title,
+  useTheme,
+} from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
@@ -15,19 +26,23 @@ import DatePicker from 'react-native-date-picker';
 import axios from 'axios';
 import ApiService from '../../../services/ApiService';
 import {loadData} from '../../../Utils/appData';
-// import DocumentPicker from 'react-native-document-picker';
-import {launchImageLibrary} from 'react-native-image-picker';
+import FileViewer from 'react-native-file-viewer';
+
+import DocumentPicker from 'react-native-document-picker';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const AddTaskScreen = () => {
   const theme = useTheme();
+  const navigation=useNavigation()
 
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [openPostedIn, setOpenPostedIn] = useState(false);
   const [openEndDate, setOpenEndDate] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+  const [showVerifyKYCModal, setShowVerifyKYCModal] = useState(false);
+  const [showWarningKYCModal, setShowWarningKYCModal] = useState(false);
 
   const [category, setCategory] = useState(null);
   const [subCategory, setSubCategory] = useState(null);
@@ -45,6 +60,8 @@ const AddTaskScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState([]);
+  const [userId, setUserId] = useState(null);
+  const [user, setUser] = useState(null);
 
   // Reset form
   const resetForm = () => {
@@ -67,16 +84,40 @@ const AddTaskScreen = () => {
     return {token, userData};
   };
 
-  // Fetch categories
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const storedUser = await loadData('userInfo');
+      if (storedUser) {
+        setUserId(storedUser.userId);
+      }
+    };
+    getUserInfo();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchData = async () => {
+      try {
+        const response = await ApiService.get('systemuser/get-user', {
+          userId,
+        });
+        console.log(response, 'userrrrr');
+
+        setUser(response.data);
+      } catch (error) {
+        console.log('Error fetching profile:', error);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // const {token} = await getTokenAndUser();
         const res = await ApiService.get(
           '/categories/get-all',
-          //   {
-          //     headers: {Authorization: `Bearer ${token}`},
-          //   },
         );
         console.log(res, 'response');
         const formatted = res.data.map(item => ({
@@ -92,7 +133,6 @@ const AddTaskScreen = () => {
     fetchCategories();
   }, []);
 
-  // Fetch subcategories
   useEffect(() => {
     const fetchSubCategories = async () => {
       if (!category) return;
@@ -129,50 +169,40 @@ const AddTaskScreen = () => {
     fetchSubCategories();
   }, [category]);
 
-  // const handleFilePick = async () => {
-  //   try {
-  //     const results = await DocumentPicker.pickMultiple({
-  //       type: [DocumentPicker.types.allFiles],
-  //     });
-  //     setFiles(results);
-  //   } catch (err) {
-  //     if (!DocumentPicker.isCancel(err)) {
-  //       console.error(err);
-  //     }
-  //   }
-  // };
+  const handleFilePick = async () => {
+    console.log('check1');
+    try {
+      console.log('check2');
+      const results = await DocumentPicker.pick({
+        type: [DocumentPicker.types.allFiles],
+        allowMultiSelection: true,
+      });
 
-  const handleFilePick = () => {
-    const options = {
-      mediaType: 'mixed',
-      selectionLimit: 0,
-    };
+      console.log(results, 'documents results');
 
-    launchImageLibrary(options, response => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.error('ImagePicker Error:', response.errorMessage);
+      const formatted = results.map(file => ({
+        uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+        name: file.name || `file-${Date.now()}`,
+        type: file.type || 'application/octet-stream',
+      }));
+
+      setFiles(prev => [...prev, ...formatted]);
+      console.log('Selected files:', formatted);
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled picker');
       } else {
-        const selectedFiles = response.assets.map(asset => ({
-          uri:
-            Platform.OS === 'ios'
-              ? asset.uri.replace('file://', '')
-              : asset.uri,
-          name: asset.fileName || `file-${Date.now()}`,
-          type: asset.type || 'application/octet-stream',
-        }));
-        setFiles(selectedFiles);
-        console.log('Files selected:', selectedFiles);
+        console.error('File pick error:', err);
+        Alert.alert('Error', 'File selection failed.');
       }
-    });
+    }
   };
 
   const handleSubmit = async () => {
     if (
       !category ||
       !subCategory ||
-      !postedIn ||
+      // !postedIn ||
       !endDate ||
       !amount ||
       !phoneNumber ||
@@ -191,6 +221,7 @@ const AddTaskScreen = () => {
       );
       return;
     }
+
     try {
       const {token, userData} = await getTokenAndUser();
       if (!userData?.userId) {
@@ -200,12 +231,14 @@ const AddTaskScreen = () => {
 
       const categoryObj = categoryList.find(c => c.value === category);
       const subCategoryObj = subCategoryList.find(s => s.value === subCategory);
+      const today = new Date().toISOString().split('T')[0];
 
       const formData = new FormData();
       formData.append('task', categoryObj?.label || '');
       formData.append('Categories', categoryObj?.label || '');
       formData.append('SubCategory', subCategoryObj?.label || '');
-      formData.append('targetedPostIn', postedIn);
+      // formData.append('targetedPostIn', postedIn);
+      formData.append('targetedPostIn', today);
       formData.append('endData', endDate);
       formData.append('amount', amount);
       formData.append('phoneNumber', phoneNumber);
@@ -224,6 +257,10 @@ const AddTaskScreen = () => {
         });
       });
 
+      files.forEach((file, idx) => {
+        console.log(`file[${idx}]`, file);
+      });
+
       console.log(formData, 'form data of add task');
 
       const response = await ApiService.post('/task/create', formData);
@@ -239,6 +276,20 @@ const AddTaskScreen = () => {
       console.error('Submission error:', error);
       Alert.alert('Error', 'An error occurred while creating the task');
     }
+  };
+
+  const getFileIcon = fileName => {
+    const ext = fileName.split('.').pop().toLowerCase();
+
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'image';
+    if (['pdf'].includes(ext)) return 'file-pdf-box';
+    if (['doc', 'docx'].includes(ext)) return 'file-word-box';
+    if (['xls', 'xlsx'].includes(ext)) return 'file-excel-box';
+    if (['ppt', 'pptx'].includes(ext)) return 'file-powerpoint-box';
+    if (['mp4', 'mov'].includes(ext)) return 'file-video';
+    if (['mp3'].includes(ext)) return 'file-music';
+
+    return 'file';
   };
 
   return (
@@ -294,7 +345,7 @@ const AddTaskScreen = () => {
       )}
 
       {/* Posted In Date Picker */}
-      <TouchableOpacity onPress={() => setOpenPostedIn(true)}>
+      {/* <TouchableOpacity onPress={() => setOpenPostedIn(true)}>
         <TextInput
           label="Posted In"
           value={postedIn}
@@ -304,7 +355,7 @@ const AddTaskScreen = () => {
           pointerEvents="none"
           style={{marginBottom: 10}}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* End Date Picker */}
       <TouchableOpacity onPress={() => setOpenEndDate(true)}>
@@ -366,12 +417,106 @@ const AddTaskScreen = () => {
         </Text>
       </TouchableOpacity>
 
+      {files.length > 0 && (
+        <View style={{marginBottom: 10}}>
+          <Text style={{fontWeight: 'bold', marginBottom: 5}}>
+            Selected Documents:
+          </Text>
+
+          {files.map((file, index) => {
+            const isImage =
+              file.type?.includes('image') ||
+              ['jpg', 'jpeg', 'png', 'gif'].includes(
+                file.name.split('.').pop().toLowerCase(),
+              );
+
+            return (
+              <View
+                key={index}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 8,
+                  borderBottomWidth: 1,
+                  borderColor: '#ccc',
+                }}>
+                {/* File Type Icon */}
+                <MaterialCommunityIcons
+                  name={getFileIcon(file.name)}
+                  size={22}
+                  color="#1D9BFB"
+                  style={{marginRight: 8}}
+                />
+
+                {/* Image Thumbnail or Text */}
+                <TouchableOpacity
+                  style={{flex: 1}}
+                  onPress={() => {
+                    if (file.uri) {
+                      FileViewer.open(file.uri)
+                        .then(() => console.log('File opened successfully'))
+                        .catch(error => {
+                          console.error('File open error', error);
+                          Alert.alert('Error', 'Unable to open file');
+                        });
+                    }
+                  }}>
+                  {isImage ? (
+                    <Image
+                      source={{uri: file.uri}}
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 4,
+                        resizeMode: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={{color: '#1D9BFB'}}>{file.name}</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Delete Icon */}
+                <TouchableOpacity
+                  onPress={() => {
+                    const updated = [...files];
+                    updated.splice(index, 1);
+                    setFiles(updated);
+                  }}>
+                  <MaterialCommunityIcons
+                    name="close-circle"
+                    size={22}
+                    color="red"
+                  />
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       <Button
         mode="contained"
-        onPress={handleSubmit}
-        style={{marginTop: 20, paddingVertical: 5}}
-        contentStyle={{height: 50}}
-        labelStyle={{fontSize: 18}}>
+        onPress={() => {
+          if (user.status === 'Pending') {
+            setShowVerifyKYCModal(true);
+          } else if (user.sttus === 'Rejected') {
+            setShowWarningKYCModal(true);
+          } else {
+            handleSubmit();
+          }
+        }}
+        // onPress={handleSubmit}
+        style={{
+          marginTop: 20,
+          paddingVertical: 5,
+          backgroundColor: '#3797FF',
+          fontSize: 20,
+          // width: 150,
+          // height: 60,
+        }}
+        contentStyle={{height: 44}}
+        labelStyle={{fontSize: 20}}>
         Submit
       </Button>
 
@@ -401,8 +546,336 @@ const AddTaskScreen = () => {
         }}
         onCancel={() => setOpenEndDate(false)}
       />
+
+      <Portal>
+        <Modal
+          visible={showVerifyKYCModal}
+          onDismiss={() => setShowVerifyKYCModal(false)}
+          contentContainerStyle={styles.kycModalContainer}>
+          <View style={styles.kycHeader}>
+            <Image
+              source={require('../../../assets/images/verify-icon.png')} // 👈 Put your image in assets folder
+              style={styles.kycIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.kycHeaderText}>Verifying</Text>
+          </View>
+
+          <View style={styles.kycBody}>
+            <Text style={styles.kycStatus}>KYC Verifying</Text>
+            <Text style={styles.kycTitle}>You can't add task.</Text>
+            
+
+            <TouchableOpacity
+              style={styles.kycButton}
+              onPress={() => {
+                setShowVerifyKYCModal(false);
+                navigation.navigate('Profile');
+              }}>
+              <Text style={styles.kycButtonText}>For More</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </Portal>
+
+      <Portal>
+        <Modal
+          visible={showWarningKYCModal}
+          onDismiss={() => setShowWarningKYCModal(false)}
+          contentContainerStyle={styles.warningKycModalContainer}>
+          <View style={styles.warningKycHeader}>
+            <Image
+              source={require('../../../assets/images/danger-icon.png')} // Replace with your warning icon
+              style={styles.warningKycIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.warningKycHeaderText}>Whoops</Text>
+          </View>
+
+          <View style={styles.warningKycBody}>
+            <Text style={styles.warningKycTitle}>KYC Rejected</Text>
+            <Text style={styles.warningKycStatus}>
+              You can't add task.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.warningKycButton}
+              onPress={() => {
+                setShowWarningKYCModal(false);
+                navigation.navigate('Profile');
+              }}>
+              <Text style={styles.warningKycButtonText}>For More</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </Portal>
+
+      {/* <Portal>
+        <Modal
+          visible={showKYCModal}
+          onDismiss={() => setShowKYCModal(false)}
+          contentContainerStyle={styles.kycModalContainer}>
+          {user.status === 'Pending' && (
+            <>
+              <View style={[styles.kycHeader, {backgroundColor: '#FFC107'}]}>
+                <Image
+                  source={require('../../../assets/images/verify-icon.png')}
+                  style={styles.kycIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.kycHeaderText}>Verifying</Text>
+              </View>
+
+              <View style={styles.kycBody}>
+                <Text style={styles.kycTitle}>Your Account</Text>
+                <Text style={styles.kycStatus}>Verifying</Text>
+
+                <TouchableOpacity
+                  style={styles.kycButton}
+                  onPress={() => {
+                    setShowKYCModal(false);
+                    navigation.navigate('Profile');
+                  }}>
+                  <Text style={styles.kycButtonText}>For More</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {user.status === 'Rejected' && (
+            <>
+              <View style={[styles.kycHeader, {backgroundColor: '#f44336'}]}>
+                <Image
+                  source={require('../../../assets/images/danger-icon.png')}
+                  style={styles.kycIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.kycHeaderText}>Whoops</Text>
+              </View>
+
+              <View style={styles.kycBody}>
+                <Text style={styles.kycTitle}>KYC</Text>
+                <Text style={styles.kycStatus}>
+                  Under Process. You can't add task.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.kycButton}
+                  onPress={() => {
+                    setShowKYCModal(false);
+                    navigation.navigate('Profile');
+                  }}>
+                  <Text style={styles.kycButtonText}>For More</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </Modal>
+      </Portal> */}
     </KeyboardAwareScrollView>
   );
 };
 
 export default AddTaskScreen;
+
+// const styles = StyleSheet.create({
+//   kycModalContainer: {
+//     margin: 20,
+//     backgroundColor: '#fff',
+//     borderRadius: 12,
+//     paddingBottom: 20,
+//     overflow: 'hidden',
+//     elevation: 5, // for Android shadow
+//     shadowColor: '#000', // for iOS shadow
+//     shadowOffset: {width: 0, height: 2},
+//     shadowOpacity: 0.3,
+//     shadowRadius: 4,
+//   },
+//   kycHeader: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: 15,
+//     justifyContent: 'center',
+//   },
+//   kycIcon: {
+//     width: 24,
+//     height: 24,
+//     marginRight: 10,
+//   },
+//   kycHeaderText: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: '#fff',
+//   },
+//   kycBody: {
+//     paddingHorizontal: 20,
+//     paddingTop: 20,
+//     alignItems: 'center',
+//   },
+//   kycTitle: {
+//     fontSize: 22,
+//     fontWeight: '700',
+//     color: '#333',
+//     marginBottom: 8,
+//   },
+//   kycStatus: {
+//     fontSize: 16,
+//     color: '#666',
+//     textAlign: 'center',
+//     marginBottom: 20,
+//   },
+//   kycButton: {
+//     backgroundColor: '#007BFF',
+//     paddingVertical: 10,
+//     paddingHorizontal: 25,
+//     borderRadius: 8,
+//   },
+//   kycButtonText: {
+//     color: '#fff',
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+// });
+
+const styles = StyleSheet.create({
+  kycModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    marginHorizontal: 30,
+    overflow: 'hidden',
+  },
+  kycHeader: {
+    backgroundColor: '#FFC107',
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  kycIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: 5,
+  },
+  kycHeaderText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  kycBody: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  kycTitle: {
+    fontSize: 16,
+    color: '#444',
+  },
+  kycStatus: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  kycButton: {
+    marginTop: 20,
+    backgroundColor: '#E0E0E0',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
+  kycButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  warningKycModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    marginHorizontal: 30,
+    overflow: 'hidden',
+  },
+  warningKycHeader: {
+    backgroundColor: '#f44336', // red
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  warningKycIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: 10,
+  },
+  warningKycHeaderText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  warningKycBody: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  warningKycTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  warningKycStatus: {
+    fontSize: 14,
+    color: '#444',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  warningKycButton: {
+    backgroundColor: '#e0e0e0',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  warningKycButtonText: {
+    color: '#444',
+    fontWeight: 'bold',
+  },
+});
+
+// const styles = StyleSheet.create({
+//   warningKycModalContainer: {
+//     backgroundColor: 'white',
+//     borderRadius: 20,
+//     marginHorizontal: 30,
+//     overflow: 'hidden',
+//   },
+//   warningKycHeader: {
+//     backgroundColor: '#f44336', // red
+//     alignItems: 'center',
+//     paddingVertical: 20,
+//   },
+//   warningKycIcon: {
+//     width: 40,
+//     height: 40,
+//     marginBottom: 10,
+//   },
+//   warningKycHeaderText: {
+//     color: 'white',
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//   },
+//   warningKycBody: {
+//     alignItems: 'center',
+//     padding: 20,
+//   },
+//   warningKycTitle: {
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     marginBottom: 8,
+//   },
+//   warningKycStatus: {
+//     fontSize: 14,
+//     color: '#444',
+//     textAlign: 'center',
+//     marginBottom: 20,
+//   },
+//   warningKycButton: {
+//     backgroundColor: '#e0e0e0',
+//     paddingHorizontal: 30,
+//     paddingVertical: 10,
+//     borderRadius: 10,
+//   },
+//   warningKycButtonText: {
+//     color: '#444',
+//     fontWeight: 'bold',
+//   },
+// });

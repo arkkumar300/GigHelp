@@ -12,7 +12,7 @@ const CustomHeader = ({navigation}) => {
         </TouchableOpacity>
 
         <Image
-          source={require('../assets/images/gig-logo1.png')} 
+          source={require('../assets/images/gig-logo1.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -20,13 +20,18 @@ const CustomHeader = ({navigation}) => {
 
       <View style={styles.icons}>
         <Icon name="magnify" size={30} color="#1D9BFB" style={styles.icon} />
-        <Icon
-          name="account-circle-outline"
-          size={30}
-          color="#1D9BFB"
-          style={styles.icon}
-        />
-        <Icon name="bell-ring-outline" size={30} color="" />
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Icon
+            name="account-circle-outline"
+            size={30}
+            color="#1D9BFB"
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+        {/* <Icon name="bell-ring-outline" size={30} color="" /> */}
+        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+          <Icon name="bell-ring-outline" size={30} color="#1D9BFB" />
+        </TouchableOpacity>
       </View>
     </View>
   );

@@ -1,6 +1,6 @@
 // Converted React Native CLI code with requested libraries
 
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -15,147 +15,108 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { Button, TextInput, Card, Avatar } from 'react-native-paper';
+import {Button, TextInput, Card, Avatar} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 // import DocumentPicker from 'react-native-document-picker';
 // import { launchImageLibrary } from 'react-native-image-picker';
 
 // import ImagePicker from 'react-native-image-picker';
-import DocumentView from 'react-native-document-viewer';
+// import DocumentView from 'react-native-document-viewer';
+import FileViewer from 'react-native-file-viewer';
+import RNFS from 'react-native-fs';
+import {useRoute} from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
+import ApiService from '../../../services/ApiService';
+import BidderDetails from './BidderDetails';
+import styles from './TaskBiddeerStyle';
 
-const CategoryCard = ({ task, onBack }) => {
-  const [documents, setDocuments] = useState([]);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewUri, setPreviewUri] = useState(null);
-  const [fileName, setFileName] = useState('');
-  const [fileType, setFileType] = useState('');
+const CategoryCard = ({task, onBack}) => {
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState(task.Amount || '');
 
-  useEffect(() => {
-    if (Array.isArray(task?.document)) {
-      setDocuments(task.document);
-    }
-  }, [task?.document]);
-
-  const handleUpdateTask = async () => {
-    const token = await AsyncStorage.getItem('token');
-    try {
-      const response = await axios.put(
-        `http://localhost:3001/task/update/${task.taskId}`,
-        { amount },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.status === 200) {
-        Alert.alert('Success', 'Bidding amount updated successfully!');
-        setEditing(false);
-      }
-    } catch (error) {
-      console.error('Error updating bid:', error);
-      Alert.alert('Error', 'An error occurred while updating the bid.');
-    }
-  };
-
-  const openPreview = (docUrl, name, type) => {
-    setPreviewUri(docUrl);
-    setFileName(name);
-    setFileType(type);
-    setPreviewVisible(true);
-  };
-
-  const renderDocIcon = (ext) => {
-    if (["jpg", "jpeg", "png", "gif"].includes(ext)) return 'image';
-    if (ext === 'pdf') return 'file-pdf';
-    return 'file';
-  };
-
   return (
-    <Card style={styles.card}>
+    <Card style={styles.taskCard}>
       <View style={styles.headerRow}>
-        <Button mode="outlined" onPress={onBack}>Back</Button>
-        <Button mode="contained" onPress={editing ? handleUpdateTask : () => setEditing(true)}>
-          {editing ? 'Submit' : 'Edit'}
-        </Button>
+        <TouchableOpacity onPress={onBack}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <View style={styles.actionIcons}>
+          <TouchableOpacity onPress={() => setEditing(!editing)}>
+            <MaterialCommunityIcons name="pencil" size={24} color="#FF9800" />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <MaterialCommunityIcons name="delete" size={24} color="#f44336" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <Text style={styles.title}>Category: {task.Categories}</Text>
-      <Text>Status: {task.status}</Text>
-      <Text>Posted: {new Date(task.createdAt).toLocaleDateString()}</Text>
+      <View style={styles.categoryDetailsCard}>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaText}>Category: {task.Categories}</Text>
+          <Text style={styles.metaText}>2d ago</Text>
+        </View>
 
-      {task.Categories === 'Transport' ? (
-        <Text>From: {task.from} | To: {task.to}</Text>
-      ) : (
-        <Text>Sub Category: {task.SubCategory}</Text>
-      )}
+        <Text style={styles.subText}>Subcategory: {task.SubCategory}</Text>
+        <Text style={styles.subText}>Status: {task.status}</Text>
+        <Text style={styles.subText}>
+          Posted in: {new Date(task.createdAt).toLocaleDateString()}
+        </Text>
 
-      <View style={styles.amountRow}>
-        {editing ? (
-          <TextInput
-            label="Enter New Amount"
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            style={styles.input}
-          />
-        ) : (
-          <Text style={styles.amountText}>{task.amount}</Text>
-        )}
+        <View style={styles.amountBox}>
+          <Text style={styles.amountText}>{task.amount.toLocaleString()}</Text>
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Description</Text>
-      <Text>{task.description}</Text>
+      <View style={styles.descriptionCard}>
+        <Text style={styles.sectionTitle}>Description</Text>
+        <Text style={styles.descriptionText}>{task.description}</Text>
+      </View>
 
       <Text style={styles.sectionTitle}>Documents</Text>
-      <FlatList
-        data={documents}
-        keyExtractor={(item, idx) => idx.toString()}
-        renderItem={({ item }) => {
-          const ext = item.split('.').pop().toLowerCase();
-          const uri = `http://localhost:3001/storege/userdp/${item}`;
-          return (
-            <TouchableOpacity style={styles.docItem} onPress={() => openPreview(uri, item, ext)}>
-              <MaterialCommunityIcons name={renderDocIcon(ext)} size={28} color="black" />
-              <Text>{item}</Text>
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      <Modal visible={previewVisible} onRequestClose={() => setPreviewVisible(false)}>
-        <View style={styles.modalView}>
-          <Text>{fileName}</Text>
-          <Button mode="outlined" onPress={() => setPreviewVisible(false)}>Close</Button>
-          <DocumentView
-            document={{ uri: previewUri, fileName }}
-            style={{ flex: 1, width: '100%' }}
-          />
-        </View>
-      </Modal>
+      <View style={styles.documentContainer}>
+        <TouchableOpacity style={styles.docButton}>
+          <MaterialCommunityIcons name="file-document" size={28} color="#555" />
+          <Text style={styles.docText}>Leadxpo Document File</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.docButton}>
+          <MaterialCommunityIcons name="image" size={28} color="#555" />
+          <Text style={styles.docText}>Leadxpo Images File</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.docButton}>
+          <MaterialCommunityIcons name="file-pdf" size={28} color="#555" />
+          <Text style={styles.docText}>Leadxpo PDF File</Text>
+        </TouchableOpacity>
+      </View>
     </Card>
   );
 };
 
-const BidderCard = ({ name, date, amount, image, onPress }) => {
+const BidderCard = ({name, date, amount, image, onPress}) => {
   const initials = name
     .split(' ')
-    .map((n) => n[0])
+    .map(n => n[0])
     .join('');
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.bidderCard}>
-      <Avatar.Image size={60} source={image ? { uri: image } : null} label={initials} />
-      <View>
-        <Text>Name: {name}</Text>
-        <Text>Date: {date}</Text>
-        <Text>Amount: {amount}/-</Text>
+      {image ? (
+        <Avatar.Image size={60} source={{uri: image}} />
+      ) : (
+        <Avatar.Text size={60} label={initials} />
+      )}
+      <View style={{marginLeft: 12}}>
+        <Text style={styles.bidderName}>Name: {name}</Text>
+        <Text style={styles.bidderDetail}>Posted info: {date}</Text>
+        <Text style={styles.bidderDetail}>Amount: {amount}/-</Text>
       </View>
     </TouchableOpacity>
   );
 };
 
-const SinglePage = ({ task }) => {
+const SinglePage = () => {
+  const route = useRoute();
+  const {task} = route.params;
+
   const [selectedBidder, setSelectedBidder] = useState(null);
   const [bidders, setBidders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -165,18 +126,20 @@ const SinglePage = ({ task }) => {
       const token = await AsyncStorage.getItem('token');
       try {
         const [bidderRes, bidsRes] = await Promise.all([
-          axios.get(`http://localhost:3001/Bids/users-by-task/${task.taskId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get('http://localhost:3001/Bids/get-all-bids', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          ApiService.get(`/Bids/users-by-task/${task.taskId}`),
+          ApiService.get('/Bids/get-all-bids'),
         ]);
 
-        const filtered = (bidsRes.data.data || []).filter(b => b.taskId == task.taskId);
-        const allBidders = (bidderRes.data.data || []).map(bidder => {
+        console.log(bidderRes, 'ddddddd');
+        console.log(bidsRes, 'sssss');
+
+        const filtered = (bidsRes.data || []).filter(
+          b => b.taskId == task.taskId,
+        );
+
+        const allBidders = (bidderRes.data || []).map(bidder => {
           const bid = filtered.find(b => b.userId == bidder.userId);
-          return { ...bidder, bidDetails: bid };
+          return {...bidder, bidDetails: bid};
         });
 
         setBidders(allBidders);
@@ -189,42 +152,45 @@ const SinglePage = ({ task }) => {
     fetchData();
   }, [task.taskId]);
 
+  if (selectedBidder) {
+    return (
+      <View style={styles.container}>
+        <Button mode="outlined" onPress={() => setSelectedBidder(null)}>
+          Back to Bidders
+        </Button>
+        <BidderDetails bidder={selectedBidder} task={task} />
+        {/* <Text>Bidder Details: {selectedBidder.userName}</Text> */}
+        {/* Add more bidder details here */}
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      {selectedBidder ? (
+    <FlatList
+      data={bidders}
+      keyExtractor={(item, index) => index.toString()}
+      ListHeaderComponent={
         <>
-          <Button mode="outlined" onPress={() => setSelectedBidder(null)}>Back to Bidders</Button>
-          {/* Replace below with actual bidder detail view */}
-          <Text>Bidder Details: {selectedBidder.userName}</Text>
-        </>
-      ) : (
-        <>
-          <CategoryCard task={task} onBack={() => setSelectedBidder(null)} />
+          <CategoryCard task={task} onBack={() => {}} />
           <Text style={styles.sectionTitle}>Bidders</Text>
-          {loading ? (
-            <Text>Loading bidders...</Text>
-          ) : bidders.length === 0 ? (
-            <Text>No bidders found for this task.</Text>
-          ) : (
-            <FlatList
-              data={bidders}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => (
-                <BidderCard
-                  name={item.userName}
-                  date={new Date(item.bidDetails.dateOfBids).toLocaleDateString()}
-                  amount={item.bidDetails.bidOfAmount}
-                  image={item.image}
-                  onPress={() => setSelectedBidder(item)}
-                />
-              )}
-            />
-          )}
+          {loading && <Text>Loading bidders...</Text>}
         </>
+      }
+      ListEmptyComponent={
+        !loading && <Text>No bidders found for this task.</Text>
+      }
+      renderItem={({item}) => (
+        <BidderCard
+          name={item.userName}
+          date={new Date(item.bidDetails.dateOfBids).toLocaleDateString()}
+          amount={item.bidDetails.bidOfAmount}
+          image={item.image}
+          onPress={() => setSelectedBidder(item)}
+        />
       )}
-    </ScrollView>
+      contentContainerStyle={styles.container}
+    />
   );
 };
-
 
 export default SinglePage;

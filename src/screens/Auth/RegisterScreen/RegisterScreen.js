@@ -8,17 +8,19 @@ import {
   Modal,
   ScrollView,
   SafeAreaView,
+  Image,
   Alert,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../services/ApiService';
+import {useIsFocused} from '@react-navigation/native';
+import styles from './RegisterStyles';
 
 export default function RegisterScreen({navigation}) {
   const [identityType, setIdentityType] = useState('Aadhar Number');
   const [identityModalVisible, setIdentityModalVisible] = useState(false);
   const [identityNumber, setIdentityNumber] = useState('');
   const [identityProof, setIdentityProof] = useState('');
-
   const [userName, setUserName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -27,10 +29,11 @@ export default function RegisterScreen({navigation}) {
   const [experience, setExperience] = useState('');
 
   const identityOptions = ['Aadhar Number', 'PAN Number', 'Voter ID'];
+  const isFocused = useIsFocused();
 
   const handleRegister = async () => {
     if (!userName || !phoneNumber || !email || !password || !identityNumber) {
-      Alert.alert('Please fill all required fields.');
+      Alert.alert('Missing Fields', 'Please fill all required fields.');
       return;
     }
 
@@ -50,76 +53,99 @@ export default function RegisterScreen({navigation}) {
       ],
     };
 
-    console.log(payload, 'payload');
-
     try {
       const result = await ApiService.post('systemuser/register', payload);
 
-      Alert.alert(
-        'Registration Successful',
-        result.message || 'You are registered!',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ],
-      );
+      if (result.success) {
+        // navigation.navigate('Login')
+        Alert.alert(
+          'Registration Successful',
+          result.message || 'You are registered!',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ],
+        );
+      } else {
+        Alert.alert(
+          'Registration Failed',
+          result.message || 'Something went wrong!',
+        );
+      }
     } catch (error) {
-      console.error('Registration Error:', error);
-      Alert.alert(
-        'Registration Failed',
-        error?.data?.message || 'Something went wrong!',
-      );
+      Alert.alert('Error', error?.data?.message || 'Something went wrong!');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <Image
+        source={require('../../../assets/images/gig-login-bottom-img.jpg')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="chevron-left" size={26} color="#000" />
+        </TouchableOpacity>
+
+        {/* Logo + Tagline */}
+        <View style={styles.logoWrapper}>
+          <Image
+            source={require('../../../assets/images/gig-logo1.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.tagline}>Help & Earn</Text>
+        </View>
+
         <Text style={styles.header}>Register</Text>
 
-        <Text style={styles.label}>Username:</Text>
+        <Text style={styles.label}>Name:</Text>
         <TextInput
           style={styles.input}
-          placeholder="Mahesh"
+          placeholder="Full Name"
           value={userName}
           onChangeText={setUserName}
         />
 
-        <Text style={styles.label}>Phone Number:</Text>
+        <Text style={styles.label}>Phone Number :</Text>
         <TextInput
           style={styles.input}
-          placeholder="+91 99995 55564"
+          placeholder="+91 99985 55664"
           keyboardType="phone-pad"
           value={phoneNumber}
           onChangeText={setPhoneNumber}
         />
 
-        <Text style={styles.label}>Email:</Text>
+        <Text style={styles.label}>Email :</Text>
         <TextInput
           style={styles.input}
-          placeholder="example@gmail.com"
+          placeholder="leadxpo123@gmail.com"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
 
-        <Text style={styles.label}>Password:</Text>
+        <Text style={styles.label}>Password :</Text>
         <TextInput
           style={styles.input}
-          placeholder="6 - 20 characters"
+          placeholder="6 -20 characters"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
 
-        <Text style={styles.label}>Identity Type:</Text>
+        <Text style={styles.label}>Identify Proof :</Text>
         <TouchableOpacity
           style={styles.dropdownTouchable}
           onPress={() => setIdentityModalVisible(true)}>
           <Text style={styles.dropdownText}>{identityType}</Text>
-          <Icon name="keyboard-arrow-down" size={24} color="#333" />
+          <Icon name="chevron-right" size={20} color="#333" />
         </TouchableOpacity>
 
         <Modal visible={identityModalVisible} transparent animationType="fade">
@@ -145,40 +171,40 @@ export default function RegisterScreen({navigation}) {
 
         <TextInput
           style={styles.input}
-          placeholder={
-            identityType === 'Aadhar Number'
-              ? '8677 8875 9876'
-              : identityType === 'PAN Number'
-              ? 'ABCDE1234F'
-              : 'XYZ1234567'
-          }
+          placeholder="9877 6575 9875"
           value={identityNumber}
           onChangeText={setIdentityNumber}
         />
 
-        <Text style={styles.label}>Identity Proof (optional):</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Proof URL or Description"
-          value={identityProof}
-          onChangeText={setIdentityProof}
-        />
+        <Text style={styles.label}>Fill the Skills</Text>
+        <View style={styles.skillHeader}>
+          <Text style={styles.label}></Text>
+          <TouchableOpacity>
+            <Icon name="plus" size={26} color="#007BFF" />
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.label}>Skills:</Text>
         <View style={styles.skillBox}>
           <TextInput
             style={styles.input}
-            placeholder="Work (e.g., Developer)"
+            placeholder="Works"
             value={work}
             onChangeText={setWork}
           />
           <TextInput
             style={styles.input}
-            placeholder="Experience (e.g., 2 years)"
+            placeholder="Experience"
             value={experience}
             onChangeText={setExperience}
           />
+          <TouchableOpacity style={styles.removeSkill}>
+            <Icon name="minus" size={24} color="#666" />
+          </TouchableOpacity>
         </View>
+
+        <Text style={styles.termsText}>
+          I agree to the <Text style={styles.linkText}>Terms of Service</Text>
+        </Text>
 
         <TouchableOpacity
           style={styles.createAccountBtn}
@@ -187,94 +213,14 @@ export default function RegisterScreen({navigation}) {
         </TouchableOpacity>
 
         <Text style={styles.signInText}>
-          Have an Account? <Text style={styles.linkText}>Sign in</Text>
+          Have an Account?{' '}
+          <Text
+            style={styles.linkText}
+            onPress={() => navigation.navigate('Login')}>
+            Sign in
+          </Text>
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  input: {
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    paddingVertical: 8,
-    marginBottom: 15,
-    fontSize: 14,
-  },
-  dropdownTouchable: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  modalItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  modalText: {
-    fontSize: 16,
-  },
-  skillBox: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 5,
-    marginBottom: 15,
-  },
-  createAccountBtn: {
-    backgroundColor: '#000',
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  createAccountText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  signInText: {
-    textAlign: 'center',
-    fontSize: 13,
-  },
-  linkText: {
-    color: '#007BFF',
-  },
-});
