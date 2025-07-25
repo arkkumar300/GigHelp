@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   FlatList,
@@ -25,49 +25,95 @@ import {loadData} from '../../../Utils/appData';
 import TaskBidder from './TaskBidder';
 import AssignTask from './AssignTask';
 import styles from './MyTaskStyle';
+import {useFocusEffect} from '@react-navigation/native';
 
 const MyTaskScreen = () => {
+  console.log("MyTaskScreen rendered");
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskBidder, setShowTaskBidder] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [currentTask, setCurrentTask] = useState({});
   const navigation = useNavigation();
+  console.log("abcd")
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        // const token = await AsyncStorage.getItem("token");
-        const userData = await loadData('userInfo');
+  useFocusEffect(
+    useCallback(() => {
+      console.log("abcd")
+      let isActive = true;
 
-        if (!userData || !userData.userId) {
-          Alert.alert('Error', 'Authorization token or user data missing!');
-          return;
+      const fetchTasks = async () => {
+        try {
+          const userData = await loadData('userInfo');
+
+          if (!userData || !userData.userId) {
+            Alert.alert('Error', 'Authorization token or user data missing!');
+            return;
+          }
+
+          const userId = userData.userId;
+
+          const response = await ApiService.post('/task/get-task-by-user', {
+            userId,
+          });
+
+          console.log(response, 'response my tas');
+
+          const tasksWithColors = response.data.map(task => ({
+            ...task,
+            color: getColorByStatus(task.status),
+          }));
+
+          if (isActive) setTasks(tasksWithColors);
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+          Alert.alert('Error', 'Failed to fetch tasks.');
         }
+      };
 
-        const userId = userData.userId;
+      fetchTasks();
 
-        const response = await ApiService.post(
-          '/task/get-task-by-user',
-          {userId},
-          // { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log(response, 'response my tas');
+      // Cleanup to avoid state updates if screen is unfocused quickly
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
-        const tasksWithColors = response.data.map(task => ({
-          ...task,
-          color: getColorByStatus(task.status),
-        }));
+  // useEffect(() => {
+  //   const fetchTasks = async () => {
+  //     try {
+  //       // const token = await AsyncStorage.getItem("token");
+  //       const userData = await loadData('userInfo');
 
-        setTasks(tasksWithColors);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        Alert.alert('Error', 'Failed to fetch tasks.');
-      }
-    };
+  //       if (!userData || !userData.userId) {
+  //         Alert.alert('Error', 'Authorization token or user data missing!');
+  //         return;
+  //       }
 
-    fetchTasks();
-  }, []);
+  //       const userId = userData.userId;
+
+  //       const response = await ApiService.post(
+  //         '/task/get-task-by-user',
+  //         {userId},
+  //         // { headers: { Authorization: `Bearer ${token}` } }
+  //       );
+  //       console.log(response, 'response my tas');
+
+  //       const tasksWithColors = response.data.map(task => ({
+  //         ...task,
+  //         color: getColorByStatus(task.status),
+  //       }));
+
+  //       setTasks(tasksWithColors);
+  //     } catch (error) {
+  //       console.error('Error fetching tasks:', error);
+  //       Alert.alert('Error', 'Failed to fetch tasks.');
+  //     }
+  //   };
+
+  //   fetchTasks();
+  // }, []);
 
   const handleDelete = async taskId => {
     Alert.alert('Delete Task', 'Are you sure you want to delete this Task?', [

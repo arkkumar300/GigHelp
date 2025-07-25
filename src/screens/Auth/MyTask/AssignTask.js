@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {Card, Avatar, Button} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ApiService from '../../../services/ApiService';
 import styles from './AssignTaskStyle';
-import {useRoute} from '@react-navigation/native';
+import {useRoute, useFocusEffect} from '@react-navigation/native';
 import AssignTaskChatBoard from '../ChatBoard/AssignTaskChartBoard';
 
 const DocumentCard = ({icon, label, fileUrl}) => (
@@ -44,6 +44,7 @@ const DocumentSection = ({title, documents = []}) => {
       <FlatList
         data={documents}
         keyExtractor={(item, index) => index.toString()}
+        scrollEnabled={false}
         horizontal
         renderItem={({item}) => (
           <DocumentCard
@@ -91,6 +92,7 @@ const ExciteProfileCard = ({bidder}) => (
     <FlatList
       data={[1, 2, 3, 4]}
       keyExtractor={(item, index) => index.toString()}
+      scrollEnabled={false}
       numColumns={2}
       renderItem={() => <SkillCard skill="Social Media" experience="3 years" />}
     />
@@ -106,32 +108,69 @@ const BidderDisputeCard = () => {
   const [loading, setLoading] = useState(true);
 
   console.log(bidders, 'bidders');
+  console.log(bidder, 'bidder');
   console.log(task, 'task');
 
-  useEffect(() => {
-    const fetchBidders = async () => {
-      const token = await AsyncStorage.getItem('token');
-      try {
-        const response = await ApiService.get(
-          `/Bids/users-by-task/${task.taskId}`,
-        );
+  useFocusEffect(
+    useCallback(() => {
+      const fetchBidders = async () => {
+        const token = await AsyncStorage.getItem('token');
+        try {
+          // const response = await ApiService.get(
+          //   `/Bids/users-by-task/${task.taskId}`,
+          // );
 
-        setBidders(response.data || []);
+          // setBidders(response.data || []);
+          const [bidderRes, bidsRes] = await Promise.all([
+            ApiService.get(`/Bids/users-by-task/${task.taskId}`),
+            ApiService.get('/Bids/get-all-bids'),
+          ]);
 
-        const assignTaskBidder = response?.data.find(item => {
-          return item.userId === Number(task.assignedBidderId);
-        });
-        setBidder(assignTaskBidder)
-      } catch (error) {
-        console.error('Error fetching bidders:', error);
-      } finally {
-        setLoading(false);
+          console.log(bidderRes, 'ddddddd');
+          console.log(bidsRes, 'sssss');
+
+          const filtered = (bidsRes.data || []).filter(
+            b => b.taskId == task.taskId,
+          );
+
+          const allBidders = (bidderRes.data || []).map(bidder => {
+            const bid = filtered.find(b => b.userId == bidder.userId);
+            return {...bidder, bidDetails: bid};
+          });
+
+          setBidders(allBidders);
+          console.log(allBidders,"ddddd")
+
+          const assignTaskBidder = allBidders.find(item => {
+            console.log(
+              item.userId,
+              Number(task.assignedBidderId),
+              'testttttt',
+            );
+            return item.userId === Number(task.assignedBidderId);
+          });
+
+          console.log(assignTaskBidder, 'assign bidder');
+          setBidder(assignTaskBidder);
+        } catch (error) {
+          console.error('Error fetching bidders:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      if (task?.taskId) {
+        fetchBidders();
       }
-    };
-    if (task?.taskId) {
-      fetchBidders();
-    }
-  }, [task?.taskId]);
+
+      // Optional cleanup
+      return () => {
+        setBidders([]);
+        setBidder(null);
+        setLoading(true);
+      };
+    }, [task?.taskId]),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -139,6 +178,7 @@ const BidderDisputeCard = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={80}>
       <ScrollView style={styles.container}>
+
         <View style={styles.headerBox}>
           <Text style={styles.headerText}>Bidder Dispute</Text>
           <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
@@ -184,8 +224,10 @@ const BidderDisputeCard = () => {
           documents={task.document || []}
         />
 
-        {bidders.length > 0 && <ExciteProfileCard bidder={bidder} />}
-        <View style={{flex: 1, height: "60%", marginBottom: 30}}>
+        {/* {bidders.length > 0 && <ExciteProfileCard bidder={bidder} />} */}
+        {bidder ? <ExciteProfileCard bidder={bidder} /> : null}
+
+        <View style={{flex: 1, height: '60%', marginBottom: 30}}>
           <AssignTaskChatBoard task={bidder} />
         </View>
       </ScrollView>

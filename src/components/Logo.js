@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
   },
   bottomImage: {
     width: width,
-    height: height * 0.3,
+    height: height * 0.2,
   },
 });

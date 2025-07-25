@@ -18,7 +18,7 @@ import {
   Title,
   useTheme,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
@@ -34,7 +34,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const AddTaskScreen = () => {
   const theme = useTheme();
-  const navigation=useNavigation()
+  const navigation = useNavigation();
 
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
@@ -84,65 +84,151 @@ const AddTaskScreen = () => {
     return {token, userData};
   };
 
-  useEffect(() => {
-    const getUserInfo = async () => {
-      const storedUser = await loadData('userInfo');
-      if (storedUser) {
-        setUserId(storedUser.userId);
-      }
-    };
-    getUserInfo();
-  }, []);
+  // useEffect(() => {
+  //   const getUserInfo = async () => {
+  //     const storedUser = await loadData('userInfo');
+  //     if (storedUser) {
+  //       setUserId(storedUser.userId);
+  //     }
+  //   };
+  //   getUserInfo();
+  // }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const getUserInfo = async () => {
+        const storedUser = await loadData('userInfo');
+        if (storedUser) {
+          setUserId(storedUser.userId);
+        }
+      };
+      getUserInfo();
+    }, []),
+  );
 
-  useEffect(() => {
-    if (!userId) return;
+  // useEffect(() => {
+  //   if (!userId) return;
 
-    const fetchData = async () => {
-      try {
-        const response = await ApiService.get('systemuser/get-user', {
-          userId,
-        });
-        console.log(response, 'userrrrr');
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await ApiService.get('systemuser/get-user', {
+  //         userId,
+  //       });
+  //       console.log(response, 'userrrrr');
 
-        setUser(response.data);
-      } catch (error) {
-        console.log('Error fetching profile:', error);
-      }
-    };
+  //       setUser(response.data);
+  //     } catch (error) {
+  //       console.log('Error fetching profile:', error);
+  //     }
+  //   };
 
-    fetchData();
-  }, [userId]);
+  //   fetchData();
+  // }, [userId]);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await ApiService.get(
-          '/categories/get-all',
-        );
-        console.log(res, 'response');
-        const formatted = res.data.map(item => ({
-          label: item.categoryName,
-          value: item.categoryId,
-        }));
-        setCategoryList(formatted);
-        console.log(formatted, 'forrrrrrr');
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-    fetchCategories();
-  }, []);
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       const res = await ApiService.get(
+  //         '/categories/get-all',
+  //       );
+  //       console.log(res, 'response');
+  //       const formatted = res.data.map(item => ({
+  //         label: item.categoryName,
+  //         value: item.categoryId,
+  //       }));
+  //       setCategoryList(formatted);
+  //       console.log(formatted, 'forrrrrrr');
+  //     } catch (error) {
+  //       console.error('Error fetching categories:', error);
+  //     }
+  //   };
+  //   fetchCategories();
+  // }, []);
 
+  // useEffect(() => {
+  //   const fetchSubCategories = async () => {
+  //     if (!category) return;
+  //     try {
+  //       // const {token} = await getTokenAndUser();
+  //       const res = await ApiService.get(
+  //         `/subcategories/get-all-categoryId?categoryId=${category}`,
+  //         //   {
+  //         //     headers: {Authorization: `Bearer ${token}`},
+  //         //   },
+  //       );
+  //       const formatted = res.data.map(item => ({
+  //         label: item.SubCategoryName,
+  //         value: item.SubCategoryId,
+  //       }));
+  //       setSubCategoryList(formatted);
+
+  //       console.log(formatted, 'sub category');
+
+  //       const selected = categoryList.find(cat => cat.value === category);
+  //       setCategoryName(selected?.label || '');
+
+  //       if (selected?.label?.toLowerCase() === 'transport') {
+  //         setFrom('Default From Location');
+  //         setTo('Default To Location');
+  //       } else {
+  //         setFrom('');
+  //         setTo('');
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching subcategories:', error);
+  //     }
+  //   };
+  //   fetchSubCategories();
+  // }, [category]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+
+      const fetchData = async () => {
+        try {
+          const response = await ApiService.get('systemuser/get-user', {
+            userId,
+          });
+          console.log(response, 'userrrrr');
+          setUser(response.data);
+        } catch (error) {
+          console.log('Error fetching profile:', error);
+        }
+      };
+
+      fetchData();
+    }, [userId]),
+  );
+
+  // 2. Fetch categories
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCategories = async () => {
+        try {
+          const res = await ApiService.get('/categories/get-all');
+          console.log(res, 'response');
+          const formatted = res.data.map(item => ({
+            label: item.categoryName,
+            value: item.categoryId,
+          }));
+          setCategoryList(formatted);
+          console.log(formatted, 'forrrrrrr');
+        } catch (error) {
+          console.error('Error fetching categories:', error);
+        }
+      };
+
+      fetchCategories();
+    }, []),
+  );
+
+  // 3. Fetch subcategories when category changes (keep useEffect here — it depends on state)
   useEffect(() => {
     const fetchSubCategories = async () => {
       if (!category) return;
       try {
-        // const {token} = await getTokenAndUser();
         const res = await ApiService.get(
           `/subcategories/get-all-categoryId?categoryId=${category}`,
-          //   {
-          //     headers: {Authorization: `Bearer ${token}`},
-          //   },
         );
         const formatted = res.data.map(item => ({
           label: item.SubCategoryName,
@@ -166,6 +252,7 @@ const AddTaskScreen = () => {
         console.error('Error fetching subcategories:', error);
       }
     };
+
     fetchSubCategories();
   }, [category]);
 
@@ -564,7 +651,6 @@ const AddTaskScreen = () => {
           <View style={styles.kycBody}>
             <Text style={styles.kycStatus}>KYC Verifying</Text>
             <Text style={styles.kycTitle}>You can't add task.</Text>
-            
 
             <TouchableOpacity
               style={styles.kycButton}
@@ -594,9 +680,7 @@ const AddTaskScreen = () => {
 
           <View style={styles.warningKycBody}>
             <Text style={styles.warningKycTitle}>KYC Rejected</Text>
-            <Text style={styles.warningKycStatus}>
-              You can't add task.
-            </Text>
+            <Text style={styles.warningKycStatus}>You can't add task.</Text>
 
             <TouchableOpacity
               style={styles.warningKycButton}
@@ -677,65 +761,6 @@ const AddTaskScreen = () => {
 };
 
 export default AddTaskScreen;
-
-// const styles = StyleSheet.create({
-//   kycModalContainer: {
-//     margin: 20,
-//     backgroundColor: '#fff',
-//     borderRadius: 12,
-//     paddingBottom: 20,
-//     overflow: 'hidden',
-//     elevation: 5, // for Android shadow
-//     shadowColor: '#000', // for iOS shadow
-//     shadowOffset: {width: 0, height: 2},
-//     shadowOpacity: 0.3,
-//     shadowRadius: 4,
-//   },
-//   kycHeader: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     padding: 15,
-//     justifyContent: 'center',
-//   },
-//   kycIcon: {
-//     width: 24,
-//     height: 24,
-//     marginRight: 10,
-//   },
-//   kycHeaderText: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     color: '#fff',
-//   },
-//   kycBody: {
-//     paddingHorizontal: 20,
-//     paddingTop: 20,
-//     alignItems: 'center',
-//   },
-//   kycTitle: {
-//     fontSize: 22,
-//     fontWeight: '700',
-//     color: '#333',
-//     marginBottom: 8,
-//   },
-//   kycStatus: {
-//     fontSize: 16,
-//     color: '#666',
-//     textAlign: 'center',
-//     marginBottom: 20,
-//   },
-//   kycButton: {
-//     backgroundColor: '#007BFF',
-//     paddingVertical: 10,
-//     paddingHorizontal: 25,
-//     borderRadius: 8,
-//   },
-//   kycButtonText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: '600',
-//   },
-// });
 
 const styles = StyleSheet.create({
   kycModalContainer: {
@@ -830,52 +855,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-// const styles = StyleSheet.create({
-//   warningKycModalContainer: {
-//     backgroundColor: 'white',
-//     borderRadius: 20,
-//     marginHorizontal: 30,
-//     overflow: 'hidden',
-//   },
-//   warningKycHeader: {
-//     backgroundColor: '#f44336', // red
-//     alignItems: 'center',
-//     paddingVertical: 20,
-//   },
-//   warningKycIcon: {
-//     width: 40,
-//     height: 40,
-//     marginBottom: 10,
-//   },
-//   warningKycHeaderText: {
-//     color: 'white',
-//     fontSize: 20,
-//     fontWeight: 'bold',
-//   },
-//   warningKycBody: {
-//     alignItems: 'center',
-//     padding: 20,
-//   },
-//   warningKycTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginBottom: 8,
-//   },
-//   warningKycStatus: {
-//     fontSize: 14,
-//     color: '#444',
-//     textAlign: 'center',
-//     marginBottom: 20,
-//   },
-//   warningKycButton: {
-//     backgroundColor: '#e0e0e0',
-//     paddingHorizontal: 30,
-//     paddingVertical: 10,
-//     borderRadius: 10,
-//   },
-//   warningKycButtonText: {
-//     color: '#444',
-//     fontWeight: 'bold',
-//   },
-// });

@@ -367,7 +367,6 @@ const ProfileScreen = () => {
           <View style={styles.kycRow}>
             <Text style={styles.kycText}>KYC</Text>
             <Text style={styles.kycText}>Status</Text>
-            import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
             <View
               style={{
                 flexDirection: 'row',

@@ -229,7 +229,7 @@ const AssignTaskChatBoard = ({task}) => {
       style={{flex: 1}}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
-      <Text style={styles.header}>Chat with {task?.taskId}</Text>
+      <Text style={styles.header}>Chat with {task?.userName}</Text>
 
       <View style={{flexGrow: 1, maxHeight: 400}}>
         <FlatList

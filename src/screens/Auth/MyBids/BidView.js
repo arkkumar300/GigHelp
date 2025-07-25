@@ -131,149 +131,160 @@ const TaskDetails = ({task, onBack}) => {
 
   return (
     <PaperProvider>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Button
-          mode="outlined"
-          icon="arrow-left"
-          onPress={onBack}
-          style={styles.backButton}>
-          Back
-        </Button>
-
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Category: {task.Categories}</Title>
-            <Paragraph>Status: {task.status}</Paragraph>
-            <Paragraph>
-              Posted in: {new Date(task.targetedPostIn).toLocaleDateString()}
-            </Paragraph>
-            {task.Categories === 'Transport' ? (
-              <>
-                <Paragraph>From: {task.from || 'N/A'}</Paragraph>
-                <Paragraph>To: {task.to || 'N/A'}</Paragraph>
-              </>
-            ) : (
-              <Paragraph>Sub Category: {task.SubCategory || 'N/A'}</Paragraph>
-            )}
-            <Paragraph>Task Amount: ₹{task.amount || 'N/A'}</Paragraph>
-            {!editing ? (
-              <Paragraph>
-                Bidding Amount: ₹{task.bidOfAmount || 'N/A'}
-              </Paragraph>
-            ) : (
-              <TextInput
-                label="Bidding Amount"
-                value={biddingAmount}
-                onChangeText={text => setBiddingAmount(text)}
-                keyboardType="numeric"
-                style={styles.input}
-              />
-            )}
+      {/* <ScrollView contentContainerStyle={styles.container}> */}
+      <FlatList
+        ListHeaderComponent={
+          <View style={styles.container}>
             <Button
-              mode="contained"
-              onPress={editing ? handleUpdateBid : () => setEditing(true)}
-              style={styles.editButton}>
-              {editing ? 'Submit' : 'Edit'}
+              mode="outlined"
+              icon="arrow-left"
+              onPress={onBack}
+              style={styles.backButton}>
+              Back
             </Button>
-          </Card.Content>
-        </Card>
 
-        <Card style={styles.card}>
-          <Card.Title title="Description" />
-          <Card.Content>
-            <Paragraph>{task.description}</Paragraph>
-          </Card.Content>
-        </Card>
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>Category: {task.Categories}</Title>
+                <Paragraph>Status: {task.status}</Paragraph>
+                <Paragraph>
+                  Posted in:{' '}
+                  {new Date(task.targetedPostIn).toLocaleDateString()}
+                </Paragraph>
+                {task.Categories === 'Transport' ? (
+                  <>
+                    <Paragraph>From: {task.from || 'N/A'}</Paragraph>
+                    <Paragraph>To: {task.to || 'N/A'}</Paragraph>
+                  </>
+                ) : (
+                  <Paragraph>
+                    Sub Category: {task.SubCategory || 'N/A'}
+                  </Paragraph>
+                )}
+                <Paragraph>Task Amount: ₹{task.amount || 'N/A'}</Paragraph>
+                {!editing ? (
+                  <Paragraph>
+                    Bidding Amount: ₹{task.bidOfAmount || 'N/A'}
+                  </Paragraph>
+                ) : (
+                  <TextInput
+                    label="Bidding Amount"
+                    value={biddingAmount}
+                    onChangeText={text => setBiddingAmount(text)}
+                    keyboardType="numeric"
+                    style={styles.input}
+                  />
+                )}
+                <Button
+                  mode="contained"
+                  onPress={editing ? handleUpdateBid : () => setEditing(true)}
+                  style={styles.editButton}>
+                  {editing ? 'Submit' : 'Edit'}
+                </Button>
+              </Card.Content>
+            </Card>
 
-        <Card style={styles.card}>
-          <Card.Title title="Task Owner Details" />
-          <Card.Content>
-            <Paragraph>Total Tasks: {totalTasks}</Paragraph>
-            <Paragraph>Dispute Tasks: {disputeTasks}</Paragraph>
-            <Paragraph>Completed Tasks: {completedTasks}</Paragraph>
-            <Paragraph>Points: 350</Paragraph>
-          </Card.Content>
-        </Card>
+            <Card style={styles.card}>
+              <Card.Title title="Description" />
+              <Card.Content>
+                <Paragraph>{task.description}</Paragraph>
+              </Card.Content>
+            </Card>
 
-        <Card style={styles.card}>
-          <Card.Title title="Task Documents" />
-          <Card.Content>
-            {taskDocuments.length > 0 ? (
-              <View>
-                <FlatList
-                  data={taskDocuments}
-                  renderItem={renderDocumentItem}
-                  keyExtractor={(item, index) => index.toString()}
-                  horizontal
-                />
+            <Card style={styles.card}>
+              <Card.Title title="Task Owner Details" />
+              <Card.Content>
+                <Paragraph>Total Tasks: {totalTasks}</Paragraph>
+                <Paragraph>Dispute Tasks: {disputeTasks}</Paragraph>
+                <Paragraph>Completed Tasks: {completedTasks}</Paragraph>
+                <Paragraph>Points: 350</Paragraph>
+              </Card.Content>
+            </Card>
+
+            <Card style={styles.card}>
+              <Card.Title title="Task Documents" />
+              <Card.Content>
+                {taskDocuments.length > 0 ? (
+                  <View>
+                    <FlatList
+                      data={taskDocuments}
+                      renderItem={renderDocumentItem}
+                      keyExtractor={(item, index) => index.toString()}
+                      horizontal
+                    />
+                  </View>
+                ) : (
+                  <Paragraph>No documents found.</Paragraph>
+                )}
+              </Card.Content>
+            </Card>
+
+            <Card style={styles.card}>
+              <Card.Title title="Bidder Documents" />
+              <Card.Content>
+                {bidDocuments.length > 0 ? (
+                  <View>
+                    <FlatList
+                      data={bidDocuments}
+                      renderItem={renderDocumentItem}
+                      keyExtractor={(item, index) => index.toString()}
+                      horizontal
+                    />
+                  </View>
+                ) : (
+                  <Paragraph>No documents found.</Paragraph>
+                )}
+              </Card.Content>
+            </Card>
+
+            <Modal
+              visible={previewVisible}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setPreviewVisible(false)}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <IconButton
+                    icon="close"
+                    size={24}
+                    onPress={() => setPreviewVisible(false)}
+                    style={styles.closeButton}
+                  />
+                  {fileType === 'pdf' ? (
+                    <Text>PDF Preview not supported in this example.</Text>
+                  ) : (
+                    <Image
+                      source={{uri: selectedDoc}}
+                      style={styles.previewImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <Button
+                    mode="contained"
+                    onPress={() => {
+                      // Implement download functionality here
+                      Alert.alert(
+                        'Download',
+                        'Download functionality not implemented.',
+                      );
+                    }}>
+                    Download
+                  </Button>
+                </View>
               </View>
-            ) : (
-              <Paragraph>No documents found.</Paragraph>
-            )}
-          </Card.Content>
-        </Card>
-
-        <Card style={styles.card}>
-          <Card.Title title="Bidder Documents" />
-          <Card.Content>
-            {bidDocuments.length > 0 ? (
-              <View>
-                <FlatList
-                  data={bidDocuments}
-                  renderItem={renderDocumentItem}
-                  keyExtractor={(item, index) => index.toString()}
-                  horizontal
-                />
-              </View>
-            ) : (
-              <Paragraph>No documents found.</Paragraph>
-            )}
-          </Card.Content>
-        </Card>
-
-        <Modal
-          visible={previewVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setPreviewVisible(false)}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <IconButton
-                icon="close"
-                size={24}
-                onPress={() => setPreviewVisible(false)}
-                style={styles.closeButton}
-              />
-              {fileType === 'pdf' ? (
-                <Text>PDF Preview not supported in this example.</Text>
-              ) : (
-                <Image
-                  source={{uri: selectedDoc}}
-                  style={styles.previewImage}
-                  resizeMode="contain"
-                />
-              )}
-              <Button
-                mode="contained"
-                onPress={() => {
-                  // Implement download functionality here
-                  Alert.alert(
-                    'Download',
-                    'Download functionality not implemented.',
-                  );
-                }}>
-                Download
-              </Button>
-            </View>
+            </Modal>
+            <Card style={styles.card}>
+              <Card.Title title="Chat" />
+              <Card.Content>
+                <BidderChatBoard task={task} />
+              </Card.Content>
+            </Card>
+            {/* </ScrollView> */}
           </View>
-        </Modal>
-        <Card style={styles.card}>
-          <Card.Title title="Chat" />
-          <Card.Content>
-            <BidderChatBoard task={task} />
-          </Card.Content>
-        </Card>
-      </ScrollView>
+        }
+        data={[]} // trick: empty data to use FlatList just as a scrollable container
+        renderItem={null}
+      />
     </PaperProvider>
   );
 };

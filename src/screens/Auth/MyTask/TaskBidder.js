@@ -83,7 +83,7 @@ const CategoryCard = ({task, onBack}) => {
           <Text style={styles.docText}>Leadxpo Images File</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.docButton}>
-          <MaterialCommunityIcons name="file-pdf" size={28} color="#555" />
+          <MaterialCommunityIcons name="file-pdf-box" size={28} color="#555" />
           <Text style={styles.docText}>Leadxpo PDF File</Text>
         </TouchableOpacity>
       </View>

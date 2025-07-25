@@ -6,32 +6,18 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    justifyContent: 'space-between',
   },
   contentWrapper: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 100,
+    justifyContent: 'flex-start',
   },
   backButton: {
     position: 'absolute',
     top: 15,
     left: 15,
     zIndex: 10,
-  },
-  logo: {
-    width: 200,
-    height: 70,
-    alignSelf: 'center',
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  logoTagline: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 40,
-    color: '#000',
   },
   button: {
     backgroundColor: '#000',
@@ -62,16 +48,11 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   footerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     alignItems: 'center',
   },
-
   footerImage: {
     width: '100%',
-    height: height * 0.35, // or fixed like 250
+    height: height * 0.25,
     resizeMode: 'contain',
   },
 });

@@ -92,7 +92,7 @@ const CandidateCard = ({bidder, task}) => {
         await ApiService.patch('task/update-task', {
           taskId: Number(bidder.bidDetails.taskId),
           status: 'running',
-          assignedBidderId: bidder.bidderId
+          assignedBidderId: bidder.bidDetails.bidUserId
         });
 
         setOpenTransferModal(false);
@@ -104,7 +104,7 @@ const CandidateCard = ({bidder, task}) => {
   };
 
   return (
-    <ScrollView>
+    // <ScrollView>
       <Card style={styles.container}>
         <View style={styles.profileContainer}>
           <View style={styles.profileCard}>
@@ -262,7 +262,7 @@ const CandidateCard = ({bidder, task}) => {
           </View>
         </Modal>
       </Card>
-    </ScrollView>
+    // </ScrollView>
   );
 };
 

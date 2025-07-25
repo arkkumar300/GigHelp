@@ -31,6 +31,7 @@ const BidderChatBoard = ({task}) => {
   const senderId = userId;
   const receiverId = Number(task?.taskUserId);
   console.log(messages, 'msssss');
+  console.log(receiverId,senderId,"rece")
 
   useEffect(() => {
     console.log('test 1');
@@ -191,7 +192,7 @@ const BidderChatBoard = ({task}) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.header}>Chat with {receiverId}</Text>
+      <Text style={styles.header}>Chat with {task.taskUser?.userName}</Text>
 
       <View style={styles.chatContainer}>
         <FlatList

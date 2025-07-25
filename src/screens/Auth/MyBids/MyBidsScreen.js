@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   FlatList,
@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import moment from 'moment';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import ApiService from '../../../services/ApiService';
 import {loadData} from '../../../Utils/appData';
 import BidderView from './BidView';
@@ -30,25 +30,30 @@ const MyBids = () => {
   const [selectedBid, setSelectedBid] = useState(null);
   const [showKYCModal, setShowKYCModal] = useState(false);
   const navigation = useNavigation();
-  
-  useEffect(() => {
-    const fetchBids = async () => {
-      try {
-        const userData = await loadData('userInfo');
-        const res = await ApiService.get(`/Bids/user/${userData.userId}`);
-        const coloredBids = res.data.map(bid => ({
-          ...bid,
-          color: getColorByStatus(bid.status || 'pending'),
-        }));
-        setBids(coloredBids);
-      } catch (error) {
-        console.error('Error fetching bids:', error);
-        Alert.alert('Error', 'Failed to load your bids.');
-      }
-    };
+  console.log('test 2');
 
-    fetchBids();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('test 2');
+      const fetchBids = async () => {
+        try {
+          const userData = await loadData('userInfo');
+          const res = await ApiService.get(`/Bids/user/${userData.userId}`);
+          console.log(res,"bids")
+          const coloredBids = res.data.map(bid => ({
+            ...bid,
+            color: getColorByStatus(bid.status || 'pending'),
+          }));
+          setBids(coloredBids);
+        } catch (error) {
+          console.error('Error fetching bids:', error);
+          Alert.alert('Error', 'Failed to load your bids.');
+        }
+      };
+
+      fetchBids();
+    }, []),
+  );
 
   const handleDelete = async BidId => {
     Alert.alert('Delete Bid', 'Are you sure you want to delete this bid?', [

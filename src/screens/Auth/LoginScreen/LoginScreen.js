@@ -19,45 +19,48 @@ const LoginScreen = ({navigation}) => {
   }, []);
 
   return (
-    <View style={styles.container}>
+  <View style={styles.container}>
+    <TouchableOpacity
+      style={styles.backButton}
+      onPress={() => navigation.goBack()}>
+      <Icon name="arrow-left" size={28} color="#000" />
+    </TouchableOpacity>
+
+    {/* Main Content */}
+    <View style={styles.contentWrapper}>
+      <Logo style={{width: 250, height: 100, resizeMode: 'contain'}} />
+
       <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}>
-        <Icon name="arrow-left" size={28} color="#000" />
+        style={styles.button}
+        onPress={() => navigation.navigate('EmailLogin')}>
+        <Text style={styles.buttonText}>Login Email</Text>
       </TouchableOpacity>
 
-      <View style={styles.contentWrapper}>
-        <Logo style={{width: 250, height: 100, resizeMode: 'contain'}} />
+      <Text style={styles.orText}>or</Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('EmailLogin')}>
-          <Text style={styles.buttonText}>Login Email</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('PhoneLogin')}>
+        <Text style={styles.buttonText}>Login Phone number</Text>
+      </TouchableOpacity>
 
-        <Text style={styles.orText}>or</Text>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('PhoneLogin')}>
-          <Text style={styles.buttonText}>Login Phone number</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.footerText}>
-          Create New Account?{' '}
-          <Text
-            style={styles.linkText}
-            onPress={() => navigation.navigate('Register')}>
-            Sign up
-          </Text>
+      <Text style={styles.footerText}>
+        Create New Account?{' '}
+        <Text
+          style={styles.linkText}
+          onPress={() => navigation.navigate('Register')}>
+          Sign up
         </Text>
-      </View>
-
-      <View style={styles.footerContainer}>
-        <BottomImage style={styles.footerImage} />
-      </View>
+      </Text>
     </View>
-  );
+
+    {/* Footer Image */}
+    <View style={styles.footerContainer}>
+      <BottomImage style={styles.footerImage} />
+    </View>
+  </View>
+);
+
 };
 
 export default LoginScreen;

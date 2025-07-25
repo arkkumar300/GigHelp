@@ -143,6 +143,9 @@ const TaskDetailsScreen = () => {
     formData.append('taskId', task?.taskId || '');
     formData.append('taskDescription', task?.description || '');
 
+    console.log(task,"add bid task")
+    console.log(task.taskUserId,"add bid task user id")
+
     if (Array.isArray(task?.document)) {
       task.document.forEach(doc => {
         formData.append('taskDocument[]', doc);
@@ -294,7 +297,7 @@ const TaskDetailsScreen = () => {
               const ext = doc.split('.').pop().toLowerCase();
               const iconName =
                 ext === 'pdf'
-                  ? 'file-pdf'
+                  ? 'file-pdf-box'
                   : ['jpg', 'jpeg', 'png'].includes(ext)
                   ? 'image'
                   : 'attachment';
@@ -306,7 +309,7 @@ const TaskDetailsScreen = () => {
                   key={index}
                   style={styles.docRow}
                   onPress={() => openPreview(docUrl)}>
-                  <Icon name={iconName} size={24} color="#333" />
+                  <MaterialCommunityIcons name={iconName} size={24} color="#333" />
                   <Text style={{marginLeft: 8}}>{doc}</Text>
                 </TouchableOpacity>
               );

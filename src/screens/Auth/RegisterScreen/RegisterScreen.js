@@ -54,6 +54,10 @@ export default function RegisterScreen({navigation}) {
     };
 
     try {
+
+      const endpoint = 'systemuser/register';
+      const url = `${ApiService.baseURL}/${endpoint}`
+      console.log('Request URL:', url);
       const result = await ApiService.post('systemuser/register', payload);
 
       if (result.success) {

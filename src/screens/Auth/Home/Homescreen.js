@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Image,
@@ -10,7 +10,11 @@ import {Card, Text, Chip} from 'react-native-paper';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
 import styles from './HomeStyle';
 // import HomeImage from "../assets/home.jpg"; // Adjust your image path
 import AddTaskDetails from '../AddTask/TaskDdetails';
@@ -30,16 +34,17 @@ const HomeScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
   console.log(userInfo, 'user information');
 
-  useEffect(() => {
-    const getUserInfo = async () => {
-      const storedUser = await loadData('userInfo');
-      if (storedUser) {
-        setUserInfo(storedUser);
-      }
-    };
-
-    getUserInfo();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const getUserInfo = async () => {
+        const storedUser = await loadData('userInfo');
+        if (storedUser) {
+          setUserInfo(storedUser);
+        }
+      };
+      getUserInfo();
+    }, []),
+  );
 
   const colors = [
     '#2196f3',
@@ -59,54 +64,60 @@ const HomeScreen = () => {
     '#cddc39',
   ];
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        // const token = await AsyncStorage.getItem('token');
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTasks = async () => {
+        try {
+          if (!userInfo?.userId) {
+            console.log('User Not Found');
+            return;
+          }
 
-        if (!userInfo?.userId) {
-          console.log('User Not Found');
-          return;
+          const response = await ApiService.get('/task/get-all');
+          console.log(response, 'home tasks list');
+
+          if (response.success) {
+            setTasks(response.data);
+            setFilterTask(response.data);
+          }
+        } catch (err) {
+          console.error('API error:', err);
         }
+      };
 
-        const response = await ApiService.get('/task/get-all');
-        console.log(response, 'home tasks list');
+      fetchTasks();
+    }, [userInfo]),
+  );
 
-        if (response.success) {
-          setTasks(response.data);
-          setFilterTask(response.data);
-        }
-      } catch (err) {
-        console.error('API error:', err);
+  useFocusEffect(
+    useCallback(() => {
+      let filtered = [...tasks];
+
+      if (selectedCategory) {
+        filtered = filtered.filter(
+          task => task.Categories === selectedCategory,
+        );
       }
-    };
+      if (selectedSubCategory) {
+        filtered = filtered.filter(
+          task => task.Categories === selectedSubCategory,
+        );
+      }
+      if (budget) {
+        filtered = filtered.filter(task => task.amount <= budget);
+      }
+      if (category && from && to) {
+        filtered = filtered.filter(
+          task =>
+            task.Categories === category &&
+            task.from === from &&
+            task.to === to,
+        );
+      }
 
-    fetchTasks();
-  }, [userInfo]);
-
-  useEffect(() => {
-    let filtered = [...tasks];
-
-    if (selectedCategory) {
-      filtered = filtered.filter(task => task.Categories === selectedCategory);
-    }
-    if (selectedSubCategory) {
-      filtered = filtered.filter(
-        task => task.Categories === selectedSubCategory,
-      );
-    }
-    if (budget) {
-      filtered = filtered.filter(task => task.amount <= budget);
-    }
-    if (category && from && to) {
-      filtered = filtered.filter(
-        task =>
-          task.Categories === category && task.from === from && task.to === to,
-      );
-    }
-
-    setFilterTask(filtered);
-  }, [tasks, route.params]);
+      setFilterTask(filtered);
+    }, [tasks, route.params]),
+  );
 
   const renderItem = ({item, index}) => (
     <TouchableOpacity onPress={() => setSelectedTask(item)}>
