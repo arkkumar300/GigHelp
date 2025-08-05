@@ -1,6 +1,6 @@
 import {StyleSheet, Dimensions} from 'react-native';
 
-const {height,width} = Dimensions.get('window');
+const {height, width} = Dimensions.get('window');
 
 export default StyleSheet.create({
   scrollContainer: {
@@ -13,6 +13,36 @@ export default StyleSheet.create({
     paddingTop: 40,
     backgroundColor: '#fff',
   },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  successMessageContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: '#d4edda',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    zIndex: 999,
+    elevation: 5,
+  },
+
+  successMessageText: {
+    color: '#155724',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+
   backButton: {
     position: 'absolute',
     top: 10,

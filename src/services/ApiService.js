@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-const baseURL = 'https://server.gighelp.in/1991/app';
+const baseURL = 
+              'https://server.gighelp.in/1991/app'
+              // 'http://10.0.2.2:3001/1991/app/'
+              ;
 
 const ApiService = (() => {
   const axiosInstance = axios.create({
-    baseURL:
-      // 'http://10.0.2.2:3001/1991/app/',
       baseURL,
     timeout: 10000,
   });

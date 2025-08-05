@@ -29,6 +29,23 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
 
+const getStatusMessage = status => {
+  switch (status) {
+    case 'Approved':
+      return {message: 'All documents approved.', color: 'green'};
+    case 'Pending':
+      return {message: 'Documents are under review.', color: 'orange'};
+    case 'Rejected':
+      return {
+        message:
+          'Some documents were rejected. Please check remarks and re-upload.',
+        color: 'red',
+      };
+    default:
+      return {message: 'Status unknown.', color: '#555'};
+  }
+};
+
 const ProfileScreen = () => {
   const navigation = useNavigation();
 
@@ -40,6 +57,7 @@ const ProfileScreen = () => {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
+  const [remarks, setRemarks] = useState([]);
 
   const [contactEditVisible, setContactEditVisible] = useState(false);
   const [editedContact, setEditedContact] = useState({
@@ -59,6 +77,8 @@ const ProfileScreen = () => {
   const [identityEditVisible, setIdentityEditVisible] = useState(false);
   const [skillsEditVisible, setSkillsEditVisible] = useState(false);
 
+  const statusMessage = user?.status ? getStatusMessage(user.status) : null;
+
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -68,9 +88,11 @@ const ProfileScreen = () => {
   });
 
   console.log(user, 'infffff');
+  console.log(user?.identityProof?.length, 'length');
 
   const {API_BASE_URL} = getEnvVars();
   const IMAGE_URL = `${API_BASE_URL}/images/userdp`;
+  console.log(IMAGE_URL, 'image urlllllll');
 
   const handlePreview = async uri => {
     try {
@@ -112,6 +134,29 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleFileAction = uri => {
+    console.log('handleFileAction called for', uri); // ✅ Debug
+    Alert.alert(
+      'Choose Action',
+      'Would you like to preview or download the file?',
+      [
+        {
+          text: 'Preview',
+          onPress: () => handlePreview(uri),
+        },
+        {
+          text: 'Download',
+          onPress: () => handleDownload(uri),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
   // useEffect(() => {
   //   const getUserInfo = async () => {
   //     const storedUser = await loadData('userInfo');
@@ -144,6 +189,7 @@ const ProfileScreen = () => {
           setUserId(userId);
           setUser(response.data);
           setIdentityProof(response.data.identityProof || []);
+          setRemarks(response.data.remarks || []);
           console.log(
             'identityProof after update:',
             response.data.identityProof,
@@ -188,7 +234,7 @@ const ProfileScreen = () => {
       });
 
       setLoading(true);
-      setSelectedImage(res); // Temporarily show
+      setSelectedImage(res);
 
       const formData = new FormData();
       formData.append('userId', user.userId);
@@ -198,27 +244,7 @@ const ProfileScreen = () => {
         type: res.type,
       });
 
-      handleUpdate();
-
-      // const response = await ApiService.patch(
-      //   `/systemuser/user-update`,
-      //   formData,
-      // );
-
-      // console.log(response, 'update profile');
-      // const updatedUser = {
-      //   ...response.data,
-      //   identityProof: Array.isArray(response.data.identityProof)
-      //     ? response.data.identityProof
-      //     : JSON.parse(response.data.identityProof || '[]'),
-      // };
-
-      // setUser(updatedUser);
-      // setIdentityProof(updatedUser.identityProof);
-
-      // setUser(response.data);
-      // setIdentityProof(response.data.identityProof || []);
-      // Toast.show('✅ Profile picture updated!', Toast.SHORT);
+      handleUpdate(res);
     } catch (err) {
       console.log('Upload failed', err);
       setSelectedImage(null); // rollback
@@ -228,7 +254,41 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleUpdate = async () => {
+  // const handleUpdate = async () => {
+  //   try {
+  //     const formData = new FormData();
+
+  //     Object.entries(user).forEach(([key, value]) => {
+  //       if (typeof value !== 'object' && value !== null) {
+  //         formData.append(key, value);
+  //       }
+  //     });
+
+  //     if (selectedImage) {
+  //       formData.append('profilePic', {
+  //         uri: selectedImage.uri,
+  //         name: selectedImage.name,
+  //         type: selectedImage.type,
+  //       });
+  //     }
+
+  //     const response = await ApiService.patch(
+  //       `/systemuser/user-update`,
+  //       formData,
+  //     );
+
+  //     console.log(response,"response profile pic")
+
+  //     setUser(response.data);
+  //     Alert.alert('Success', 'Profile updated successfully');
+  //     setEditable(false);
+  //   } catch (error) {
+  //     console.log('Update failed:', error);
+  //     Alert.alert('Error', 'Failed to update profile');
+  //   }
+  // };
+
+  const handleUpdate = async (selectedImageOverride = null) => {
     try {
       const formData = new FormData();
 
@@ -238,12 +298,16 @@ const ProfileScreen = () => {
         }
       });
 
-      if (selectedImage) {
+      const imageToSend = selectedImageOverride || selectedImage;
+      if (imageToSend) {
         formData.append('profilePic', {
-          uri: selectedImage.uri,
-          name: selectedImage.name,
-          type: selectedImage.type,
+          uri: imageToSend.uri,
+          name: imageToSend.name,
+          type: imageToSend.type,
         });
+        console.log('✅ ProfilePic added:', imageToSend);
+      } else {
+        console.log('⚠️ No image to upload');
       }
 
       const response = await ApiService.patch(
@@ -251,6 +315,7 @@ const ProfileScreen = () => {
         formData,
       );
 
+      console.log('✅ Response:', response);
       setUser(response.data);
       Alert.alert('Success', 'Profile updated successfully');
       setEditable(false);
@@ -259,6 +324,18 @@ const ProfileScreen = () => {
       Alert.alert('Error', 'Failed to update profile');
     }
   };
+
+  let parsedSkills = [];
+
+  try {
+    if (Array.isArray(user.skills)) {
+      parsedSkills = user.skills;
+    } else if (typeof user.skills === 'string') {
+      parsedSkills = JSON.parse(user.skills);
+    }
+  } catch (error) {
+    parsedSkills = [];
+  }
 
   if (!user) {
     return (
@@ -350,7 +427,7 @@ const ProfileScreen = () => {
                 style={{paddingVertical: 12}}
                 onPress={() => {
                   setImageModalVisible(false);
-                  handleSelectImage(); // Trigger image picker and upload
+                  handleSelectImage();
                 }}>
                 <Text>Update Profile Picture</Text>
               </TouchableOpacity>
@@ -363,10 +440,11 @@ const ProfileScreen = () => {
             </View>
           </Modal>
           <Text style={styles.profileName}>{user?.userName}</Text>
+
           {/* KYC Status */}
           <View style={styles.kycRow}>
-            <Text style={styles.kycText}>KYC</Text>
-            <Text style={styles.kycText}>Status</Text>
+            <Text style={styles.kycText}>KYC Status</Text>
+            {/* <Text style={styles.kycText}>Status</Text> */}
             <View
               style={{
                 flexDirection: 'row',
@@ -423,6 +501,25 @@ const ProfileScreen = () => {
               </Text>
             </View>
           </View>
+
+          <View style={styles.statusMsgContainer}>
+            {!user.identityProof || user?.identityProofs?.length === 0 ? (
+              <Text style={[styles.statusMessageText, {color: '#6c757d'}]}>
+                Please upload documents to complete KYC.
+              </Text>
+            ) : (
+              statusMessage && (
+                <Text
+                  style={[
+                    styles.statusMessageText,
+                    {color: statusMessage.color},
+                  ]}>
+                  {statusMessage.message}
+                </Text>
+              )
+            )}
+          </View>
+
           {/* Contact Info */}
 
           <View style={styles.card}>
@@ -497,28 +594,45 @@ const ProfileScreen = () => {
             </View>
           </View>
           {/* Identity Proof */}
-          <View style={styles.card}>
+          {/* <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Identity Proof</Text>
+              <Text style={styles.cardTitle}>Documents(Identity Proofs)</Text>
 
               <TouchableOpacity onPress={() => setIdentityEditVisible(true)}>
                 <Icon name="pencil" size={18} color="#1D9BFB" />
               </TouchableOpacity>
             </View>
 
-            <View style={{marginTop: 8}}>
-              <ScrollView horizontal>
+            <View style={{marginTop: 8, minHeight: 180}}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
                 {(() => {
                   let parsedProofs = [];
+                  let parsedRemarks = [];
+
+                  // Parse identityProof
                   try {
-                    parsedProofs = Array.isArray(identityProof)
+                    const parsed = Array.isArray(identityProof)
                       ? identityProof
                       : typeof identityProof === 'string'
                       ? JSON.parse(identityProof)
                       : [];
+
+                    parsedProofs = Array.isArray(parsed) ? parsed : [];
                   } catch (e) {
                     console.warn('Invalid identityProof:', identityProof);
                     parsedProofs = [];
+                  }
+
+                  // Parse remarks
+                  try {
+                    parsedRemarks = Array.isArray(remarks)
+                      ? remarks
+                      : typeof remarks === 'string'
+                      ? JSON.parse(remarks)
+                      : [];
+                  } catch (e) {
+                    console.warn('Invalid remarks:', remarks);
+                    parsedRemarks = [];
                   }
 
                   return parsedProofs.length > 0 ? (
@@ -543,67 +657,259 @@ const ProfileScreen = () => {
                             : `${IMAGE_URL}/${proof}`
                           : proof?.uri || '';
 
+                      const justName = fileName.split('/').pop();
+                      const match = parsedRemarks.find(
+                        r => r.proof === justName,
+                      );
+
                       return (
                         <View
                           key={idx}
                           style={{marginRight: 12, alignItems: 'center'}}>
-                          {isImage ? (
-                            <Image
-                              source={{uri}}
-                              style={styles.proofImage}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <TouchableOpacity
-                              style={{
-                                width: 100,
-                                height: 140,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderWidth: 1,
-                                borderColor: '#ccc',
-                                borderRadius: 8,
-                                backgroundColor: '#f4f4f4',
-                                padding: 10,
-                              }}
-                              // onPress={() => handlePreview(uri)}
-                            >
-                              <Icon
-                                name={
-                                  ext === 'pdf'
-                                    ? 'file-pdf-box'
-                                    : ext === 'doc' || ext === 'docx'
-                                    ? 'file-word'
-                                    : 'file-document-outline'
-                                }
-                                size={40}
-                                color={
-                                  ext === 'pdf'
-                                    ? 'red'
-                                    : ext === 'docx'
-                                    ? '#2A5DB0'
-                                    : '#1D9BFB'
-                                }
+                          <TouchableOpacity
+                            onPress={() => handleDownload(uri)}
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              zIndex: 1,
+                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              borderRadius: 15,
+                              padding: 5,
+                            }}>
+                            <Icon name="download" size={20} color="#fff" />
+                          </TouchableOpacity>
+
+                          <TouchableOpacity onPress={() => handlePreview(uri)}>
+                            {isImage ? (
+                              <Image
+                                source={{uri}}
+                                style={styles.proofImage}
+                                resizeMode="cover"
                               />
+                            ) : (
+                              <View
+                                style={{
+                                  width: 100,
+                                  height: 140,
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  borderWidth: 1,
+                                  borderColor: '#ccc',
+                                  borderRadius: 8,
+                                  backgroundColor: '#f4f4f4',
+                                  padding: 10,
+                                }}>
+                                <Icon
+                                  name={
+                                    ext === 'pdf'
+                                      ? 'file-pdf-box'
+                                      : ext === 'doc' || ext === 'docx'
+                                      ? 'file-word'
+                                      : 'file-document-outline'
+                                  }
+                                  size={40}
+                                  color={
+                                    ext === 'pdf'
+                                      ? 'red'
+                                      : ext === 'docx'
+                                      ? '#2A5DB0'
+                                      : '#1D9BFB'
+                                  }
+                                />
+                                <Text
+                                  numberOfLines={2}
+                                  style={{
+                                    fontSize: 12,
+                                    textAlign: 'center',
+                                    marginTop: 6,
+                                  }}>
+                                  {fileName}
+                                </Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+
+                          {match ? (
+                            <View style={{marginTop: 6, alignItems: 'center'}}>
                               <Text
-                                numberOfLines={2}
+                                style={{
+                                  color:
+                                    match.status === 'Approved'
+                                      ? 'green'
+                                      : match.status === 'Rejected'
+                                      ? 'red'
+                                      : match.status === 'Pending'
+                                      ? 'orange'
+                                      : '#555',
+                                  fontWeight: 'bold',
+                                }}>
+                                {match.status}
+                              </Text>
+                              <Text
                                 style={{
                                   fontSize: 12,
+                                  color: '#555',
                                   textAlign: 'center',
-                                  marginTop: 6,
+                                  maxWidth: 100,
                                 }}>
-                                {fileName}
+                                {match.description}
                               </Text>
-                            </TouchableOpacity>
-                          )}
+                            </View>
+                          ) : null}
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <Text style={{color: '#888', marginTop: 4}}>
+                      No identity proof uploaded yet.
+                    </Text>
+                  );
+                })()}
+              </ScrollView>
+            </View>
+          </View> */}
 
-                          {!isImage && (
-                            <TouchableOpacity
-                              onPress={() => handleDownload(uri)}
-                              style={{marginTop: 6}}>
-                              <Icon name="download" size={18} color="#1D9BFB" />
-                            </TouchableOpacity>
-                          )}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Documents (Identity Proofs)</Text>
+              <TouchableOpacity onPress={() => setIdentityEditVisible(true)}>
+                <Icon name="pencil" size={18} color="#1D9BFB" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{marginTop: 8, minHeight: 180}}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                {(() => {
+                  let parsedProofs = [];
+
+                  try {
+                    parsedProofs = Array.isArray(identityProof)
+                      ? identityProof
+                      : typeof identityProof === 'string'
+                      ? JSON.parse(identityProof)
+                      : [];
+                  } catch (e) {
+                    console.warn('Invalid identityProof:', identityProof);
+                  }
+
+                  return parsedProofs.length > 0 ? (
+                    parsedProofs.map((proof, idx) => {
+                      const {file, type, status, description} = proof;
+
+                      const ext = file?.split('.').pop().toLowerCase();
+                      const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(
+                        ext,
+                      );
+                      const uri = file?.startsWith('http')
+                        ? file
+                        : `${IMAGE_URL}/${file}`;
+
+                      return (
+                        <View
+                          key={idx}
+                          style={{
+                            marginRight: 12,
+                            alignItems: 'center',
+                            width: 110,
+                          }}>
+                          {/* Download button */}
+                          <TouchableOpacity
+                            onPress={() => handleDownload(uri)}
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              zIndex: 1,
+                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              borderRadius: 15,
+                              padding: 5,
+                            }}>
+                            <Icon name="download" size={20} color="#fff" />
+                          </TouchableOpacity>
+
+                          {/* File preview */}
+                          <Text style={{fontSize: 15, color: '#1D9BFB',alignSelf: "left",marginBottom: 2}}>
+                              {type}
+                            </Text>
+                          <TouchableOpacity onPress={() => handlePreview(uri)}>
+                            {isImage ? (
+                              <Image
+                                source={{uri}}
+                                style={styles.proofImage}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <View
+                                style={{
+                                  width: 100,
+                                  height: 140,
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  borderWidth: 1,
+                                  borderColor: '#ccc',
+                                  borderRadius: 8,
+                                  backgroundColor: '#f4f4f4',
+                                  padding: 10,
+                                }}>
+                                <Icon
+                                  name={
+                                    ext === 'pdf'
+                                      ? 'file-pdf-box'
+                                      : ext === 'doc' || ext === 'docx'
+                                      ? 'file-word'
+                                      : 'file-document-outline'
+                                  }
+                                  size={40}
+                                  color={
+                                    ext === 'pdf'
+                                      ? 'red'
+                                      : ext === 'docx'
+                                      ? '#2A5DB0'
+                                      : '#1D9BFB'
+                                  }
+                                />
+                                <Text
+                                  numberOfLines={2}
+                                  style={{
+                                    fontSize: 12,
+                                    textAlign: 'center',
+                                    marginTop: 6,
+                                  }}>
+                                  {file}
+                                </Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+
+                          {/* Metadata */}
+                          <View style={{marginTop: 6, alignItems: 'center'}}>
+                            
+                            <Text
+                              style={{
+                                color:
+                                  status === 'Approved'
+                                    ? 'green'
+                                    : status === 'Rejected'
+                                    ? 'red'
+                                    : 'orange',
+                                fontWeight: 'bold',
+                                fontSize: 12,
+                              }}>
+                              {status}
+                            </Text>
+                            {description ? (
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  color: '#555',
+                                  textAlign: 'center',
+                                  maxWidth: 100,
+                                }}>
+                                {description}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
                       );
                     })
@@ -616,6 +922,7 @@ const ProfileScreen = () => {
               </ScrollView>
             </View>
           </View>
+
           {/* Skills */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -625,11 +932,11 @@ const ProfileScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {Array.isArray(user.skills) && user.skills.length > 0 ? (
-              user.skills.map((skill, index) => (
+            {parsedSkills.length > 0 ? (
+              parsedSkills.map((skill, index) => (
                 <View key={index} style={styles.skillItem}>
                   <Text>
-                    {skill.name} ({skill.experience})
+                    {skill.work} ({skill.experience})
                   </Text>
                 </View>
               ))
@@ -669,10 +976,39 @@ const ProfileScreen = () => {
           </View>
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Achievement</Text>
+              <Text style={styles.cardTitle}>My Ratings</Text>
             </View>
+
             <Text>Number of My Bids: {stats.totalBids}</Text>
-            <Text>Number of Task: {stats.totalTasks}</Text>
+            <Text>Number of Tasks: {stats.totalTasks}</Text>
+
+            {stats.totalTasks > 0 ? (
+              <>
+                <Text>
+                  Average Rating: {stats.avgRating?.toFixed(1) || 'N/A'}
+                </Text>
+                <View style={styles.starContainer}>
+                  {Array.from({length: 5}).map((_, index) => (
+                    <Icon
+                      key={index}
+                      name={
+                        stats.avgRating >= index + 1
+                          ? 'star'
+                          : stats.avgRating > index
+                          ? 'star-half-full'
+                          : 'star-outline'
+                      }
+                      size={20}
+                      color="#FFD700"
+                    />
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={{color: '#888', marginTop: 6}}>
+                Complete tasks to receive ratings.
+              </Text>
+            )}
           </View>
         </ScrollView>
 

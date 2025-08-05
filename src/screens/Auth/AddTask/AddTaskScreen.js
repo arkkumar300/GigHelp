@@ -36,6 +36,8 @@ const AddTaskScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation();
 
+  const [inputHeight, setInputHeight] = useState(120);
+
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [openPostedIn, setOpenPostedIn] = useState(false);
@@ -288,16 +290,17 @@ const AddTaskScreen = () => {
   const handleSubmit = async () => {
     if (
       !category ||
-      !subCategory ||
+      !subCategory
+      //  ||
       // !postedIn ||
-      !endDate ||
-      !amount ||
-      !phoneNumber ||
-      !description
+      // !endDate ||
+      // !amount ||
+      // !phoneNumber ||
+      // !description
       //   ||
       //   files.length === 0
     ) {
-      Alert.alert('Validation Error', 'Please fill all the required fields.');
+      Alert.alert('Validation Error', 'Please fill category and sub category fields.');
       return;
     }
 
@@ -447,7 +450,7 @@ const AddTaskScreen = () => {
       {/* End Date Picker */}
       <TouchableOpacity onPress={() => setOpenEndDate(true)}>
         <TextInput
-          label="End Date"
+          label="Target Date"
           value={endDate}
           mode="outlined"
           placeholder="YYYY-MM-DD"
@@ -466,16 +469,16 @@ const AddTaskScreen = () => {
         style={{marginBottom: 10}}
       />
 
-      <TextInput
+      {/* <TextInput
         label="Phone Number"
         value={phoneNumber}
         onChangeText={setPhoneNumber}
         mode="outlined"
         keyboardType="phone-pad"
         style={{marginBottom: 10}}
-      />
+      /> */}
 
-      <TextInput
+      {/* <TextInput
         label="Description"
         value={description}
         onChangeText={setDescription}
@@ -483,7 +486,26 @@ const AddTaskScreen = () => {
         multiline
         numberOfLines={5}
         style={{marginBottom: 10}}
-      />
+      /> */}
+
+      <View style={{marginBottom: 10}}>
+        <TextInput
+          label="Description"
+          value={description}
+          onChangeText={setDescription}
+          mode="outlined"
+          multiline
+          numberOfLines={5}
+          style={{
+            minHeight: 120,
+            maxHeight: 200,
+            textAlignVertical: 'top',
+          }}
+          onContentSizeChange={event => {
+            setInputHeight(event.nativeEvent.contentSize.height + 20);
+          }}
+        />
+      </View>
 
       <TouchableOpacity
         onPress={handleFilePick}
@@ -591,7 +613,7 @@ const AddTaskScreen = () => {
             setShowWarningKYCModal(true);
           } else {
             handleSubmit();
-          }
+          }``
         }}
         // onPress={handleSubmit}
         style={{

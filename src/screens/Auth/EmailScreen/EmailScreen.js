@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import {Logo, BottomImage} from '../../../components/Logo';
 import styles from './EmailScreenStyles';
@@ -16,6 +17,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 const EmailLoginScreen = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,21 +28,61 @@ const EmailLoginScreen = ({navigation}) => {
 
     const payload = {email, password};
     console.log(payload, 'login credentials');
+    setLoading(true);
 
     try {
-      const result = await ApiService.post('systemuser/login', payload);
+      const result = await ApiService.post('/systemuser/login', payload);
       await saveData('userInfo', result.data.user);
-      Alert.alert('Login Successful', result.message || 'You are logged in', [
-        {text: 'OK', onPress: () => navigation.navigate('Home')},
-      ]);
+      // Alert.alert('Login Successful', result.message || 'You are logged in', [
+      //   {text: 'OK', onPress: () => navigation.navigate('Home')},
+      // ]);
+
+      // Alert.alert('Logout', 'You have been logged out.');
+      //       navigation.reset({
+      //         index: 0,
+      //         routes: [{ name: 'Login' }],
+      //       });
+
+      setSuccessMessage(result.message || 'You are logged in');
+      navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
+
+      // setTimeout(() => {
+      //   setSuccessMessage('');
+      //   navigation.navigate('Home');
+      // }, 2000);
     } catch (error) {
       console.log('Login failed:', error);
       Alert.alert(
         'Login Failed',
         error?.data?.message || 'Something went wrong!',
       );
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {justifyContent: 'center', alignItems: 'center'},
+        ]}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  // {
+  //   loading && (
+  //     <View style={styles.loadingOverlay}>
+  //       <ActivityIndicator size="large" color="#0000ff" />
+  //     </View>
+  //   );
+  // }
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -96,7 +139,10 @@ const EmailLoginScreen = ({navigation}) => {
           <Text style={styles.forgotPasswordText}>Forget Password ?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+        <TouchableOpacity
+          style={styles.loginBtn}
+          onPress={handleLogin}
+          disabled={loading}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
@@ -112,6 +158,12 @@ const EmailLoginScreen = ({navigation}) => {
       <View style={styles.footerContainer}>
         <BottomImage style={styles.footerImage} />
       </View>
+
+      {successMessage !== '' && (
+        <View style={styles.successMessageContainer}>
+          <Text style={styles.successMessageText}>{successMessage}</Text>
+        </View>
+      )}
     </ScrollView>
   );
 };

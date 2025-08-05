@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import {StyleSheet} from 'react-native';
 
 export default StyleSheet.create({
   container: {
@@ -117,8 +117,8 @@ export default StyleSheet.create({
     fontSize: 14,
   },
   proofImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 140,
     marginRight: 10,
     borderRadius: 6,
   },
@@ -134,15 +134,35 @@ export default StyleSheet.create({
     fontWeight: 'bold',
   },
   modal: {
-  backgroundColor: '#fff',
-  padding: 20,
-  margin: 20,
-  borderRadius: 10,
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 10,
-},
-
+    backgroundColor: '#fff',
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  statusMsgContainer: {
+    // marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#f4f4f4',
+    borderColor: '#1D9BFB',
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 15,
+    marginVertical: 5,
+  },
+  statusMessageText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  starContainer: {
+    flexDirection: 'row',
+    marginTop: 6,
+  },
 });

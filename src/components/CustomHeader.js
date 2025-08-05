@@ -19,7 +19,7 @@ const CustomHeader = ({navigation}) => {
       </View>
 
       <View style={styles.icons}>
-        <Icon name="magnify" size={30} color="#1D9BFB" style={styles.icon} />
+        {/* <Icon name="magnify" size={30} color="#1D9BFB" style={styles.icon} /> */}
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           <Icon
             name="account-circle-outline"
@@ -51,20 +51,25 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    // gap: 5,
   },
   logo: {
-    width: 130,
+    width: 120,
     height: 70,
+    marginLeft: 10,
+    marginTop: 6
   },
   icons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12, 
   },
   icon: {
-    marginHorizontal: 6,
+    marginHorizontal: 4,
   },
 });

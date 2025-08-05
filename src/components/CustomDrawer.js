@@ -80,7 +80,7 @@ const CustomDrawer = ({ navigation }) => {
           source={require('../assets/images/gig-logo1.png')}
           style={styles.avatar}
         />
-        <Text style={styles.userName}>{user?.accountHolder || ''}</Text>
+        <Text style={styles.userName}>{user?.userName || ''}</Text>
       </View>
 
       {/* Drawer items */}

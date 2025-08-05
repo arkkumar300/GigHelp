@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  TextInput
 } from 'react-native';
 import {Card, Text, Chip} from 'react-native-paper';
 import axios from 'axios';
@@ -16,7 +17,7 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 import styles from './HomeStyle';
-// import HomeImage from "../assets/home.jpg"; // Adjust your image path
+import HomeImage from '../../../assets/images/home.jpg';
 import AddTaskDetails from '../AddTask/TaskDdetails';
 import {loadData} from '../../../Utils/appData';
 import ApiService from '../../../services/ApiService';
@@ -163,11 +164,28 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* <Image source={HomeImage} style={styles.heroImage} /> */}
-      {/* <View style={styles.overlay}>
+      <View style={styles.searchContainer}>
+        <MaterialCommunityIcons
+          name="magnify"
+          size={24}
+          color="#666"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search tasks..."
+          placeholderTextColor="#999"
+          // onChangeText={handleSearch}
+        />
+      </View>
+
+      <View style={styles.heroImageContainer}>
+        <Image source={HomeImage} style={styles.heroImage} />
+      </View>
+      <View style={styles.overlay}>
         <Text style={styles.heroText}>Empowering Your</Text>
         <Text style={styles.heroText}>Vision, Building Your Future.</Text>
-      </View> */}
+      </View>
 
       <Text variant="titleLarge" style={styles.title}>
         All Tasks
