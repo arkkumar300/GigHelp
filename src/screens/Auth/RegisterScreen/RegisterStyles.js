@@ -23,15 +23,25 @@ export default StyleSheet.create({
     paddingBottom: 60,
   },
   backButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 10,
     marginBottom: 10,
   },
   logoWrapper: {
     alignItems: 'center',
+    marginTop: 30,
     marginBottom: 10,
   },
   logo: {
-    width: 180,
-    height: 50,
+    width: 250,
+    height: 80,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 8,
   },
   tagline: {
     fontSize: 12,

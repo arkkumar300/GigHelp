@@ -43,6 +43,7 @@ const CandidateCard = ({bidder, task}) => {
   const [openAssignModal, setOpenAssignModal] = useState(false);
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const parsedSkills = bidder?.skills ? JSON.parse(bidder.skills) : [];
 
   const {API_BASE_URL} = getEnvVars();
   const IMAGE_URL = `${API_BASE_URL}/images/userdp`;
@@ -140,7 +141,7 @@ const CandidateCard = ({bidder, task}) => {
           </View>
 
           <View style={styles.skillsContainer}>
-            {bidder?.skills?.map((item, index) => (
+            {parsedSkills.map((item, index) => (
               <View style={styles.skillRow} key={index}>
                 <View style={styles.skillCol}>
                   <Text style={styles.skillText}>Skill : {item.work}</Text>

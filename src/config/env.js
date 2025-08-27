@@ -8,8 +8,9 @@ const ENV = {
 };
 
 const getEnvVars = () => {
-  return __DEV__ ? ENV.production : ENV.development;
+  // return __DEV__ ? ENV.production : ENV.development;
   // return __DEV__ ? ENV.development : ENV.production;
+  return __DEV__ ? ENV.production : ENV.production;
 };
 
 export default getEnvVars;

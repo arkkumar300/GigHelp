@@ -5,13 +5,22 @@ const {height, width} = Dimensions.get('window');
 export default StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   container: {
     flex: 1,
     padding: 20,
     paddingTop: 40,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    bottom: 0,        
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: 200,     
+    zIndex: -1,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -36,13 +45,11 @@ export default StyleSheet.create({
     zIndex: 999,
     elevation: 5,
   },
-
   successMessageText: {
     color: '#155724',
     fontSize: 16,
     fontWeight: '500',
   },
-
   backButton: {
     position: 'absolute',
     top: 10,
@@ -120,10 +127,9 @@ export default StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
-
   footerImage: {
     width: width,
-    height: height * 0.35, // or fixed like 250
+    height: height * 0.35,
     resizeMode: 'contain',
   },
 });

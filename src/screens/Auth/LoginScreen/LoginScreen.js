@@ -58,7 +58,7 @@ const LoginScreen = ({navigation}) => {
         <TouchableOpacity
           style={styles.button}
           onPress={() => navigation.navigate('EmailLogin')}>
-          <Text style={styles.buttonText}>Login Email</Text>
+          <Text style={styles.buttonText}>Login User Name</Text>
         </TouchableOpacity>
 
         <Text style={styles.orText}>or</Text>

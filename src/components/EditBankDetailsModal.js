@@ -1,8 +1,16 @@
-import React from 'react';
-import {View, Text, TextInput, TouchableOpacity, Alert} from 'react-native';
-import Modal from 'react-native-modal'; // <-- this replaces react-native-paper Modal
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import ApiService from '../services/ApiService'; // Adjust path as needed
+import ApiService from '../services/ApiService';
+import {cleanString} from '../Utils/cleanString';
 
 const EditBankDetailsModal = ({
   visible,
@@ -12,25 +20,31 @@ const EditBankDetailsModal = ({
   setEditedBank,
   onUpdate,
 }) => {
-  const handleSubmit = async () => {
-    try {
-      const updatedUser = {
-        ...user,
-        ...editedBank,
-      };
+  const [loading, setLoading] = useState(false); // 🔹 1. loading state
 
+  const handleSubmit = async () => {
+    setLoading(true); // 🔹 2. Start loading
+    try {
+      const updatedUser = {...editedBank};
       const formData = new FormData();
+
       Object.entries(updatedUser).forEach(([key, value]) => {
         if (typeof value !== 'object' && value !== null) {
-          formData.append(key, value);
+          if (
+            ['accountHolder', 'accountNumber', 'bankName', 'ifscCode'].includes(
+              key,
+            )
+          ) {
+            formData.append(key, cleanString(value));
+          } else {
+            formData.append(key, value);
+          }
         }
       });
 
-      const response = await ApiService.patch(
-        `/systemuser/user-update`,
-        formData,
-        // {headers: {'Content-Type': 'multipart/form-data'}},
-      );
+      formData.append('userId', user?.userId);
+
+      const response = await ApiService.patch(`/systemuser/user-update`, formData);
 
       onUpdate(response.data);
       Alert.alert('Success', 'Bank details updated');
@@ -38,6 +52,8 @@ const EditBankDetailsModal = ({
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to update bank details');
+    } finally {
+      setLoading(false); // 🔹 3. Stop loading
     }
   };
 
@@ -54,12 +70,10 @@ const EditBankDetailsModal = ({
           borderTopRightRadius: 20,
           padding: 20,
         }}>
-        {/* Close Icon */}
         <TouchableOpacity style={{alignSelf: 'flex-end'}} onPress={onDismiss}>
           <Icon name="close" size={20} />
         </TouchableOpacity>
 
-        {/* Input Fields */}
         {[
           {label: 'Holder Name :', icon: 'account', field: 'accountHolder'},
           {label: 'Bank Name :', icon: 'bank', field: 'bankName'},
@@ -72,10 +86,11 @@ const EditBankDetailsModal = ({
               <Text style={{color: '#1D9BFB'}}>{label}</Text>
             </View>
             <TextInput
-              value={editedBank[field]}
+              value={cleanString(editedBank[field])}
               onChangeText={text =>
                 setEditedBank(prev => ({...prev, [field]: text}))
               }
+              editable={!loading} // 🔹 disable input while loading
               style={{
                 borderBottomWidth: 1,
                 borderBottomColor: '#ccc',
@@ -86,16 +101,24 @@ const EditBankDetailsModal = ({
           </View>
         ))}
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          style={{
-            backgroundColor: '#1D9BFB',
-            paddingVertical: 10,
-            borderRadius: 6,
-            marginTop: 10,
-          }}>
-          <Text style={{color: '#fff', textAlign: 'center'}}>Submit</Text>
-        </TouchableOpacity>
+        {loading ? ( 
+          <ActivityIndicator
+            size="small"
+            color="#1D9BFB"
+            style={{marginTop: 10}}
+          />
+        ) : (
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={{
+              backgroundColor: '#1D9BFB',
+              paddingVertical: 10,
+              borderRadius: 6,
+              marginTop: 10,
+            }}>
+            <Text style={{color: '#fff', textAlign: 'center'}}>Submit</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </Modal>
   );

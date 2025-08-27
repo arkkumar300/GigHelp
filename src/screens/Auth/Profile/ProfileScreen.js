@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Modal from 'react-native-modal';
 
@@ -28,17 +29,17 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
 import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
+import {cleanString} from '../../../Utils/cleanString';
 
-const getStatusMessage = status => {
-  switch (status) {
+const getStatusMessage = user => {
+  switch (user.status) {
     case 'Approved':
-      return {message: 'All documents approved.', color: 'green'};
+      return {message: user?.remarks, color: 'green'};
     case 'Pending':
-      return {message: 'Documents are under review.', color: 'orange'};
+      return {message: user?.remarks, color: 'orange'};
     case 'Rejected':
       return {
-        message:
-          'Some documents were rejected. Please check remarks and re-upload.',
+        message: user?.remarks,
         color: 'red',
       };
     default:
@@ -77,7 +78,9 @@ const ProfileScreen = () => {
   const [identityEditVisible, setIdentityEditVisible] = useState(false);
   const [skillsEditVisible, setSkillsEditVisible] = useState(false);
 
-  const statusMessage = user?.status ? getStatusMessage(user.status) : null;
+  const statusMessage = user?.status ? getStatusMessage(user) : null;
+  // const statusMessage=user?.remarks
+  console.log(statusMessage, 'message');
 
   const [stats, setStats] = useState({
     totalTasks: 0,
@@ -93,6 +96,8 @@ const ProfileScreen = () => {
   const {API_BASE_URL} = getEnvVars();
   const IMAGE_URL = `${API_BASE_URL}/images/userdp`;
   console.log(IMAGE_URL, 'image urlllllll');
+  console.log('abcd');
+  console.log(`${IMAGE_URL}/${user?.profilePic}`, 'user profile');
 
   const handlePreview = async uri => {
     try {
@@ -157,75 +162,60 @@ const ProfileScreen = () => {
     );
   };
 
-  // useEffect(() => {
-  //   const getUserInfo = async () => {
-  //     const storedUser = await loadData('userInfo');
-  //     if (storedUser) {
-  //       setUserId(storedUser.userId);
-  //     }
-  //   };
-  //   getUserInfo();
-  // }, []);
+  const isActiveRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
-
-      const getUserInfoAndData = async () => {
-        try {
-          // Step 1: Load user info from storage
-          const storedUser = await loadData('userInfo');
-          if (!storedUser || !storedUser.userId) return;
-
-          const userId = storedUser.userId;
-
-          // Step 2: Fetch user profile
-          const response = await ApiService.get('systemuser/get-user', {
-            userId,
-          });
-
-          if (!isActive) return;
-
-          setUserId(userId);
-          setUser(response.data);
-          setIdentityProof(response.data.identityProof || []);
-          setRemarks(response.data.remarks || []);
-          console.log(
-            'identityProof after update:',
-            response.data.identityProof,
-          );
-
-          // Step 3: Fetch tasks and bids in parallel
-          const [taskRes, bidRes] = await Promise.all([
-            ApiService.get(`/task/task-summary-by-user?userId=${userId}`),
-            ApiService.get(`/Bids/count/${userId}`),
-          ]);
-
-          if (!isActive) return;
-
-          const {totalTasks, disputeTasks, completedTasks} =
-            taskRes?.data || {};
-          const {totalBids, completedBids} = bidRes?.data || {};
-
-          setStats({
-            totalTasks: totalTasks || 0,
-            completedTasks: completedTasks || 0,
-            disputeTasks: disputeTasks || 0,
-            totalBids: totalBids || 0,
-            completedBids: completedBids || 0,
-          });
-        } catch (error) {
-          console.log('Error fetching profile:', error);
-        }
-      };
+      isActiveRef.current = true;
 
       getUserInfoAndData();
-
       return () => {
-        isActive = false;
+        isActiveRef.current = false;
       };
     }, []),
   );
+
+  const getUserInfoAndData = async () => {
+    try {
+      const storedUser = await loadData('userInfo');
+      if (!storedUser || !storedUser.userId) return;
+
+      const userId = storedUser.userId;
+
+      const response = await ApiService.get('/systemuser/get-user', {
+        userId,
+      });
+
+      if (!isActiveRef.current) return;
+      8;
+
+      setUserId(userId);
+      setUser(response.data);
+      setIdentityProof(response.data.identityProof || []);
+      setRemarks(response.data.remarks || []);
+      console.log('identityProof after update:', response.data.identityProof);
+
+      const [taskRes, bidRes] = await Promise.all([
+        ApiService.get(`/task/task-summary-by-user?userId=${userId}`),
+        ApiService.get(`/Bids/count/${userId}`),
+      ]);
+
+      if (!isActiveRef.current) return;
+
+      const {totalTasks, disputeTasks, completedTasks} = taskRes?.data || {};
+      const {totalBids, completedBids} = bidRes?.data || {};
+
+      setStats({
+        totalTasks: totalTasks || 0,
+        completedTasks: completedTasks || 0,
+        disputeTasks: disputeTasks || 0,
+        totalBids: totalBids || 0,
+        completedBids: completedBids || 0,
+      });
+    } catch (error) {
+      console.log('Error fetching profile:', error);
+    }
+  };
 
   const handleSelectImage = async () => {
     try {
@@ -254,49 +244,11 @@ const ProfileScreen = () => {
     }
   };
 
-  // const handleUpdate = async () => {
-  //   try {
-  //     const formData = new FormData();
-
-  //     Object.entries(user).forEach(([key, value]) => {
-  //       if (typeof value !== 'object' && value !== null) {
-  //         formData.append(key, value);
-  //       }
-  //     });
-
-  //     if (selectedImage) {
-  //       formData.append('profilePic', {
-  //         uri: selectedImage.uri,
-  //         name: selectedImage.name,
-  //         type: selectedImage.type,
-  //       });
-  //     }
-
-  //     const response = await ApiService.patch(
-  //       `/systemuser/user-update`,
-  //       formData,
-  //     );
-
-  //     console.log(response,"response profile pic")
-
-  //     setUser(response.data);
-  //     Alert.alert('Success', 'Profile updated successfully');
-  //     setEditable(false);
-  //   } catch (error) {
-  //     console.log('Update failed:', error);
-  //     Alert.alert('Error', 'Failed to update profile');
-  //   }
-  // };
-
   const handleUpdate = async (selectedImageOverride = null) => {
     try {
       const formData = new FormData();
 
-      Object.entries(user).forEach(([key, value]) => {
-        if (typeof value !== 'object' && value !== null) {
-          formData.append(key, value);
-        }
-      });
+      formData.append('userId', user?.userId);
 
       const imageToSend = selectedImageOverride || selectedImage;
       if (imageToSend) {
@@ -316,7 +268,7 @@ const ProfileScreen = () => {
       );
 
       console.log('✅ Response:', response);
-      setUser(response.data);
+      getUserInfoAndData();
       Alert.alert('Success', 'Profile updated successfully');
       setEditable(false);
     } catch (error) {
@@ -339,9 +291,17 @@ const ProfileScreen = () => {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={{textAlign: 'center', marginTop: 50}}>Loading...</Text>
-      </SafeAreaView>
+      // <SafeAreaView style={styles.container}>
+      //   {/* <Text style={{textAlign: 'center', marginTop: 50}}>Loading...</Text> */}
+      //   <ActivityIndicator size="large" color="#0000ff" />
+      // </SafeAreaView>
+      <View
+        style={[
+          styles.container,
+          {justifyContent: 'center', alignItems: 'center'},
+        ]}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
   }
 
@@ -354,10 +314,10 @@ const ProfileScreen = () => {
             <TouchableOpacity>
               <Icon name="arrow-left" size={24} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Profile</Text>
-            <TouchableOpacity onPress={() => setEditable(prev => !prev)}>
+            {/* <Text style={styles.headerTitle}>Profile</Text> */}
+            {/* <TouchableOpacity onPress={() => setEditable(prev => !prev)}>
               <Icon name="pencil" size={24} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           <TouchableOpacity
             onPress={() => setImageModalVisible(true)}
@@ -368,7 +328,8 @@ const ProfileScreen = () => {
                   styles.profileImage,
                   {justifyContent: 'center', alignItems: 'center'},
                 ]}>
-                <Text>Uploading...</Text> {/* or use an ActivityIndicator */}
+                {/* <Text>Uploading...</Text>  */}
+                {loading ? <Text>Uploading...</Text> : null}
               </View>
             ) : selectedImage?.uri || user?.profilePic ? (
               <Image
@@ -502,10 +463,14 @@ const ProfileScreen = () => {
             </View>
           </View>
 
-          <View style={styles.statusMsgContainer}>
+          {/* <View style={styles.statusMsgContainer}>
             {!user.identityProof || user?.identityProofs?.length === 0 ? (
               <Text style={[styles.statusMessageText, {color: '#6c757d'}]}>
                 Please upload documents to complete KYC.
+              </Text>
+            ) : !user.remarks || user.remarks.trim() === '' ? (
+              <Text style={[styles.statusMessageText, {color: 'orange'}]}>
+                Verification under process
               </Text>
             ) : (
               statusMessage && (
@@ -515,6 +480,28 @@ const ProfileScreen = () => {
                     {color: statusMessage.color},
                   ]}>
                   {statusMessage.message}
+                </Text>
+              )
+            )}
+          </View> */}
+
+          <View style={styles.statusMsgContainer}>
+            {!user.identityProof || user?.identityProofs?.length === 0 ? (
+              <Text style={[styles.statusMessageText, {color: '#6c757d'}]}>
+                {cleanString('Please upload documents to complete KYC.')}
+              </Text>
+            ) : !user.remarks || user.remarks.trim() === '' ? (
+              <Text style={[styles.statusMessageText, {color: 'orange'}]}>
+                {cleanString('Verification under process')}
+              </Text>
+            ) : (
+              statusMessage && (
+                <Text
+                  style={[
+                    styles.statusMessageText,
+                    {color: statusMessage.color},
+                  ]}>
+                  {cleanString(statusMessage.message)}
                 </Text>
               )
             )}
@@ -578,197 +565,21 @@ const ProfileScreen = () => {
 
             <View style={styles.infoRow}>
               <Icon name="account" size={20} style={{color: '#3797FF'}} />
-              <Text>Holder Name: {user?.accountHolder}</Text>
+              <Text>Holder Name: {cleanString(user?.accountHolder)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Icon name="bank" size={20} style={{color: '#3797FF'}} />
-              <Text>Bank Name: {user?.bankName}</Text>
+              <Text>Bank Name: {cleanString(user?.bankName)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Icon name="numeric" size={20} style={{color: '#3797FF'}} />
-              <Text>A/C Number: {user?.accountNumber}</Text>
+              <Text>A/C Number: {cleanString(user?.accountNumber)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Icon name="barcode" size={20} style={{color: '#3797FF'}} />
-              <Text>IFSC Number: {user?.ifscCode}</Text>
+              <Text>IFSC Number: {cleanString(user?.ifscCode)}</Text>
             </View>
           </View>
-          {/* Identity Proof */}
-          {/* <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Documents(Identity Proofs)</Text>
-
-              <TouchableOpacity onPress={() => setIdentityEditVisible(true)}>
-                <Icon name="pencil" size={18} color="#1D9BFB" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{marginTop: 8, minHeight: 180}}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-                {(() => {
-                  let parsedProofs = [];
-                  let parsedRemarks = [];
-
-                  // Parse identityProof
-                  try {
-                    const parsed = Array.isArray(identityProof)
-                      ? identityProof
-                      : typeof identityProof === 'string'
-                      ? JSON.parse(identityProof)
-                      : [];
-
-                    parsedProofs = Array.isArray(parsed) ? parsed : [];
-                  } catch (e) {
-                    console.warn('Invalid identityProof:', identityProof);
-                    parsedProofs = [];
-                  }
-
-                  // Parse remarks
-                  try {
-                    parsedRemarks = Array.isArray(remarks)
-                      ? remarks
-                      : typeof remarks === 'string'
-                      ? JSON.parse(remarks)
-                      : [];
-                  } catch (e) {
-                    console.warn('Invalid remarks:', remarks);
-                    parsedRemarks = [];
-                  }
-
-                  return parsedProofs.length > 0 ? (
-                    parsedProofs.map((proof, idx) => {
-                      const fileName =
-                        typeof proof === 'string'
-                          ? proof
-                          : proof?.name || proof?.uri || '';
-
-                      const ext = fileName.includes('.')
-                        ? fileName.split('.').pop().toLowerCase()
-                        : '';
-
-                      const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(
-                        ext,
-                      );
-
-                      const uri =
-                        typeof proof === 'string'
-                          ? proof.startsWith('http')
-                            ? proof
-                            : `${IMAGE_URL}/${proof}`
-                          : proof?.uri || '';
-
-                      const justName = fileName.split('/').pop();
-                      const match = parsedRemarks.find(
-                        r => r.proof === justName,
-                      );
-
-                      return (
-                        <View
-                          key={idx}
-                          style={{marginRight: 12, alignItems: 'center'}}>
-                          <TouchableOpacity
-                            onPress={() => handleDownload(uri)}
-                            style={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              zIndex: 1,
-                              backgroundColor: 'rgba(0,0,0,0.4)',
-                              borderRadius: 15,
-                              padding: 5,
-                            }}>
-                            <Icon name="download" size={20} color="#fff" />
-                          </TouchableOpacity>
-
-                          <TouchableOpacity onPress={() => handlePreview(uri)}>
-                            {isImage ? (
-                              <Image
-                                source={{uri}}
-                                style={styles.proofImage}
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <View
-                                style={{
-                                  width: 100,
-                                  height: 140,
-                                  justifyContent: 'center',
-                                  alignItems: 'center',
-                                  borderWidth: 1,
-                                  borderColor: '#ccc',
-                                  borderRadius: 8,
-                                  backgroundColor: '#f4f4f4',
-                                  padding: 10,
-                                }}>
-                                <Icon
-                                  name={
-                                    ext === 'pdf'
-                                      ? 'file-pdf-box'
-                                      : ext === 'doc' || ext === 'docx'
-                                      ? 'file-word'
-                                      : 'file-document-outline'
-                                  }
-                                  size={40}
-                                  color={
-                                    ext === 'pdf'
-                                      ? 'red'
-                                      : ext === 'docx'
-                                      ? '#2A5DB0'
-                                      : '#1D9BFB'
-                                  }
-                                />
-                                <Text
-                                  numberOfLines={2}
-                                  style={{
-                                    fontSize: 12,
-                                    textAlign: 'center',
-                                    marginTop: 6,
-                                  }}>
-                                  {fileName}
-                                </Text>
-                              </View>
-                            )}
-                          </TouchableOpacity>
-
-                          {match ? (
-                            <View style={{marginTop: 6, alignItems: 'center'}}>
-                              <Text
-                                style={{
-                                  color:
-                                    match.status === 'Approved'
-                                      ? 'green'
-                                      : match.status === 'Rejected'
-                                      ? 'red'
-                                      : match.status === 'Pending'
-                                      ? 'orange'
-                                      : '#555',
-                                  fontWeight: 'bold',
-                                }}>
-                                {match.status}
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: '#555',
-                                  textAlign: 'center',
-                                  maxWidth: 100,
-                                }}>
-                                {match.description}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      );
-                    })
-                  ) : (
-                    <Text style={{color: '#888', marginTop: 4}}>
-                      No identity proof uploaded yet.
-                    </Text>
-                  );
-                })()}
-              </ScrollView>
-            </View>
-          </View> */}
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -784,11 +595,28 @@ const ProfileScreen = () => {
                   let parsedProofs = [];
 
                   try {
-                    parsedProofs = Array.isArray(identityProof)
-                      ? identityProof
-                      : typeof identityProof === 'string'
-                      ? JSON.parse(identityProof)
-                      : [];
+                    // parsedProofs = Array.isArray(identityProof)
+                    //   ? identityProof
+                    //   : typeof identityProof === 'string'
+                    //   ? JSON.parse(identityProof)
+                    //   : [];
+
+                    if (Array.isArray(identityProof)) {
+                      parsedProofs = identityProof;
+                    } else if (typeof identityProof === 'string') {
+                      try {
+                        const parsed = JSON.parse(identityProof);
+                        parsedProofs = Array.isArray(parsed) ? parsed : [];
+                      } catch (e) {
+                        console.warn(
+                          'Failed to parse identityProof string:',
+                          identityProof,
+                        );
+                        parsedProofs = [];
+                      }
+                    } else {
+                      parsedProofs = [];
+                    }
                   } catch (e) {
                     console.warn('Invalid identityProof:', identityProof);
                   }
@@ -829,9 +657,15 @@ const ProfileScreen = () => {
                           </TouchableOpacity>
 
                           {/* File preview */}
-                          <Text style={{fontSize: 15, color: '#1D9BFB',alignSelf: "left",marginBottom: 2}}>
-                              {type}
-                            </Text>
+                          {/* <Text
+                            style={{
+                              fontSize: 15,
+                              color: '#1D9BFB',
+                              alignSelf: 'left',
+                              marginBottom: 2,
+                            }}>
+                            {type}
+                          </Text> */}
                           <TouchableOpacity onPress={() => handlePreview(uri)}>
                             {isImage ? (
                               <Image
@@ -884,7 +718,6 @@ const ProfileScreen = () => {
 
                           {/* Metadata */}
                           <View style={{marginTop: 6, alignItems: 'center'}}>
-                            
                             <Text
                               style={{
                                 color:
@@ -898,7 +731,7 @@ const ProfileScreen = () => {
                               }}>
                               {status}
                             </Text>
-                            {description ? (
+                            {/* {description ? (
                               <Text
                                 style={{
                                   fontSize: 11,
@@ -908,7 +741,7 @@ const ProfileScreen = () => {
                                 }}>
                                 {description}
                               </Text>
-                            ) : null}
+                            ) : null} */}
                           </View>
                         </View>
                       );
@@ -979,8 +812,8 @@ const ProfileScreen = () => {
               <Text style={styles.cardTitle}>My Ratings</Text>
             </View>
 
-            <Text>Number of My Bids: {stats.totalBids}</Text>
-            <Text>Number of Tasks: {stats.totalTasks}</Text>
+            {/* <Text>Number of My Bids: {stats.totalBids}</Text>
+            <Text>Number of Tasks: {stats.totalTasks}</Text> */}
 
             {stats.totalTasks > 0 ? (
               <>
@@ -1018,7 +851,10 @@ const ProfileScreen = () => {
           user={user}
           editedContact={editedContact}
           setEditedContact={setEditedContact}
-          onUpdate={updatedUser => setUser(updatedUser)}
+          // onUpdate={updatedUser => setUser(updatedUser)}
+          onUpdate={() => {
+            getUserInfoAndData();
+          }}
         />
 
         <EditBankDetailsModal
@@ -1027,7 +863,10 @@ const ProfileScreen = () => {
           user={user}
           editedBank={editedBank}
           setEditedBank={setEditedBank}
-          onUpdate={updatedUser => setUser(updatedUser)}
+          // onUpdate={updatedUser => setUser(updatedUser)}
+          onUpdate={() => {
+            getUserInfoAndData();
+          }}
         />
 
         <EditIdentityProofModal
@@ -1036,7 +875,10 @@ const ProfileScreen = () => {
           user={user}
           identityProof={identityProof || '[]'}
           setIdentityProof={setIdentityProof}
-          onUpdate={updatedUser => setUser(updatedUser)}
+          // onUpdate={updatedUser => setUser(updatedUser)}
+          onUpdate={() => {
+            getUserInfoAndData();
+          }}
           IMAGE_URL={IMAGE_URL}
         />
 
@@ -1044,7 +886,10 @@ const ProfileScreen = () => {
           visible={skillsEditVisible}
           onDismiss={() => setSkillsEditVisible(false)}
           user={user}
-          onUpdate={updated => setUser(updated)}
+          // onUpdate={updated => setUser(updated)}
+          onUpdate={() => {
+            getUserInfoAndData();
+          }}
         />
 
         {/* Bottom Navigation */}

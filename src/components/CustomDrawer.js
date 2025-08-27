@@ -44,7 +44,7 @@ const CustomDrawer = ({ navigation }) => {
 
     const getUser = async () => {
       try {
-        const response = await ApiService.get('systemuser/get-user', { userId });
+        const response = await ApiService.get('/systemuser/get-user', { userId });
         if (response) {
           
           setUser(response.data);

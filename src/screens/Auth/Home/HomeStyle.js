@@ -9,7 +9,7 @@ export default StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 200,
+    height: 150,
     resizeMode: 'cover',
     borderRadius: 8,
   },
@@ -20,7 +20,7 @@ export default StyleSheet.create({
   },
   heroText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: {width: 1, height: 1},

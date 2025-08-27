@@ -5,7 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput
+  TextInput,
 } from 'react-native';
 import {Card, Text, Chip} from 'react-native-paper';
 import axios from 'axios';
@@ -77,9 +77,12 @@ const HomeScreen = () => {
           const response = await ApiService.get('/task/get-all');
           console.log(response, 'home tasks list');
 
-          if (response.success) {
-            setTasks(response.data);
-            setFilterTask(response.data);
+          if (response.success) { 
+            const filteredTasks = response.data.filter(task => Number(task.userId) !== Number(userInfo.userId));
+            console.log(filteredTasks, 'home filteredTasks list');
+            // const filteredTasks=response.data
+            setTasks(filteredTasks);
+            setFilterTask(filteredTasks);
           }
         } catch (err) {
           console.error('API error:', err);

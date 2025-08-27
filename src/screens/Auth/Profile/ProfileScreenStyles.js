@@ -18,6 +18,7 @@ export default StyleSheet.create({
   headerTitle: {
     fontWeight: 'bold',
     fontSize: 18,
+    marginLeft: -30
   },
   profileImage: {
     width: 100,

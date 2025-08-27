@@ -28,18 +28,18 @@ import styles from './MyTaskStyle';
 import {useFocusEffect} from '@react-navigation/native';
 
 const MyTaskScreen = () => {
-  console.log("MyTaskScreen rendered");
+  console.log('MyTaskScreen rendered');
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskBidder, setShowTaskBidder] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [currentTask, setCurrentTask] = useState({});
   const navigation = useNavigation();
-  console.log("abcd")
+  console.log(tasks,'abcd');
 
   useFocusEffect(
     useCallback(() => {
-      console.log("abcd")
+      console.log('abcd');
       let isActive = true;
 
       const fetchTasks = async () => {
@@ -154,78 +154,90 @@ const MyTaskScreen = () => {
     }
   };
 
-  const renderTask = ({item: task}) => (
-    // <TouchableOpacity
-    //   onPress={() => {
-    //     if (task.status === 'verified') setSelectedTask(task);
-    //     else if (task.status === 'rejected') setShowKYCModal(true);
-    //     else if (task.status === 'pending') {
-    //       setShowTaskBidder(true);
-    //       setCurrentTask(task);
-    //     }
-    //   }}>
-    <TouchableOpacity
-      onPress={() => {
-        if (task.status === 'running') {
-          navigation.navigate('AssignTask', {task});
-        } else if (task.status === 'rejected') {
-          setShowKYCModal(true);
-        } else if (task.status === 'verified' || task.status === 'pending') {
-          navigation.navigate('TaskBidder', {task});
-        }
-      }}>
-      <Card style={[styles.card, {borderColor: task.color}]}>
-        <Card.Content>
-          <View style={styles.rowBetween}>
-            <Text variant="titleMedium">Category: {task.Categories}</Text>
-            <Text>{task.daysLeft}</Text>
-          </View>
+  const renderTask = ({item: task}) => {
+    const handleCardPress = () => {
+      if (task.status === 'running') {
+        navigation.navigate('AssignTask', {task});
+      } else {
+        navigation.navigate('TaskBidder', {task});
+      }
+      //  else if (task.status === 'verified' || task.status === 'pending') {
+      //   navigation.navigate('TaskBidder', {task});
+      // }
+      // else if (task.status === 'rejected') {
+      //   setShowKYCModal(true);
+      // }
+    };
 
-          {task.Categories === 'Transport' ? (
-            <View style={styles.rowBetween}>
-              <Text>From: {task.from || 'N/A'}</Text>
-              <Text>To: {task.to || 'N/A'}</Text>
-              <Icon
-                name="delete"
-                size={24}
-                color="red"
-                onPress={() => handleDelete(task.taskId)}
-              />
-            </View>
-          ) : (
-            <View style={styles.rowBetween}>
-              <Text>Sub Category: {task.SubCategory || 'N/A'}</Text>
-              <Icon
-                name="delete"
-                size={24}
-                color="red"
-                onPress={() => handleDelete(task.taskId)}
-              />
-            </View>
-          )}
+    const handleChipPress = () => {
+      if (task.status === 'pending') {
+        setShowTaskBidder(true);
+        setCurrentTask(task);
+      } else if (task.status === 'verified') {
+        setSelectedTask(task);
+      } else if (task.status === 'rejected') {
+        setShowKYCModal(true);
+      }
+    };
 
-          <View style={styles.rowBetween}>
-            <Text>Posted: {moment(task.createdAt).format('DD-MM-YYYY')}</Text>
-            <Chip
-              style={{backgroundColor: task.color}}
-              textStyle={{color: '#fff'}}
-              onPress={() => {
-                if (task.status === 'pending') {
-                  setShowTaskBidder(true);
-                  setCurrentTask(task);
-                } else if (task.status === 'rejected') {
-                  setShowKYCModal(true);
-                } else if (task.status === 'verified') {
-                  setSelectedTask(task);
-                }
-              }}>
-              ₹ {task.amount}
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
-    </TouchableOpacity>
-  );
+    return (
+      <TouchableOpacity onPress={handleCardPress}>
+        <Card style={[styles.card, {borderColor: task.color}]}>
+          <Card.Content>
+            {/* Task ID */}
+            <View style={styles.rowBetween}>
+              <Text style={styles.taskIdText}>Task ID: {task.taskId}</Text>
+            </View>
+
+            {/* Category and Status */}
+            <View style={styles.rowBetween}>
+              <Text style={styles.categoryText}>
+                Category: {task.Categories}
+              </Text>
+              <Chip
+                style={styles.chipStyle(task.color)}
+                textStyle={styles.chipText}>
+                {task.status}
+              </Chip>
+            </View>
+
+            {/* Conditional Details */}
+            {task.Categories === 'Transport' ? (
+              <View style={styles.rowBetween}>
+                <Text style={styles.subText}>From: {task.from || 'N/A'}</Text>
+                <Text style={styles.subText}>To: {task.to || 'N/A'}</Text>
+                <Text style={styles.subText}>{task.daysLeft}</Text>
+              </View>
+            ) : (
+              <View style={styles.rowBetween}>
+                <Text style={styles.subText}>
+                  Sub Category: {task.SubCategory || 'N/A'}
+                </Text>
+                <Text style={styles.subText}>{task.daysLeft}</Text>
+              </View>
+            )}
+
+            {/* Description */}
+            <View style={styles.rowBetween}>
+              <Text style={styles.descriptionText}>
+                Description: {task.description || 'N/A'}
+              </Text>
+            </View>
+
+            {/* Posted Date and Amount */}
+            <View style={styles.rowBetween}>
+              <Text style={styles.subText}>
+                Posted: {moment(task.createdAt).format('DD-MM-YYYY')}
+              </Text>
+              <Chip style={styles.amountChip} textStyle={styles.amountText}>
+                ₹ {task.amount}
+              </Chip>
+            </View>
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
+    );
+  };
 
   if (selectedTask) {
     return <AssignTask task={selectedTask} />;
@@ -247,6 +259,13 @@ const MyTaskScreen = () => {
           keyExtractor={item => item.taskId.toString()}
           renderItem={renderTask}
           contentContainerStyle={{paddingBottom: 100}}
+          ListEmptyComponent={
+            <View style={{marginTop: 50, alignItems: 'center'}}>
+              <Text style={{fontSize: 16, color: '#555'}}>
+                No tasks available
+              </Text>
+            </View>
+          }
         />
 
         <Portal>
